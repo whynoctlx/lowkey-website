@@ -31,7 +31,7 @@
 
   // Library ------------------------------------------------------------------------------------------------------
   let lib = $state<Lib>(structuredClone(demo.lib));
-  let pins = $state<string[]>([demo.lib.playlists[0].uri]);
+  let pins = $state<string[]>([demo.lib.playlists[0].uri, ...["Luca Brassi10x", "Redzed", "Unaverage Gang"].map(demo.artistUri)]);
   let playedAt = $state<Record<string, number>>({});
   let libSort = $state<LibSort>("added");
   let libDensity = $state<Density>("regular");
@@ -144,11 +144,14 @@
   }
   // Every page the window opens is also an entry in the browser's history (state.lk: its depth), so the mouse's
   // back/forward buttons, the browser's own and a trackpad swipe walk the window, not the site.
+  // The legal pages have their own links (?privacy, ?tos) that open them and show while they're open.
+  const LINKS: Record<string, string> = { privacy: "lowkey:privacy", tos: "lowkey:terms", terms: "lowkey:terms" };
+  const urlFor = (v: View) => ({ "lowkey:privacy": "?privacy", "lowkey:terms": "?tos" })[v.row?.uri ?? ""] ?? location.pathname;
   function navigate(v: View) {
     back = [...back, snap()];
     fwd = [];
     show(v);
-    pushState("", { lk: back.length });
+    pushState(urlFor(v), { lk: back.length });
   }
   function step(from: View[], to: View[]): [View[], View[]] {
     const v = from.at(-1)!;
@@ -318,7 +321,9 @@
     initMotion();
     // A reload keeps the entry's old depth in the browser's history while the window starts at the start: reset it, or
     // the first page opened pushes a depth that's already there and back does nothing.
-    replaceState("", { lk: 0 });
+    const link = Object.keys(LINKS).find((k) => new URLSearchParams(location.search).has(k));
+    replaceState(link ? location.pathname : "", { lk: 0 });
+    if (link) open(legalRows.find((r) => r.uri === LINKS[link])!, true);
     // A shared or opened download link (?download=mac|win) starts that download.
     const os = new URLSearchParams(location.search).get("download");
     if (os) getLatest(os);
@@ -419,7 +424,7 @@
       <button class="tour-btn" class:on={touring} aria-pressed={touring} title="Take the tour" onclick={startTour}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="m14.8 9.2-1.6 4-4 1.6 1.6-4z" /></svg><span>Tour</span>
       </button>
-      <!-- The community: the site's own, in Discord's blurple so it's found at once. -->
+      <!-- The community: a quiet toolbar item like Tour. -->
       <a class="discord-btn" href={DISCORD} target="_blank" rel="noopener" title="Join the Lowkey Discord">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d={DISCORD_LOGO} /></svg><span>Discord</span>
       </a>
@@ -633,9 +638,9 @@
   .top button.on { color: var(--fg); background: var(--active); }
   .top .tour-btn { flex: none; display: flex; gap: 6px; width: auto; padding: 0 var(--sp-2); font: inherit; font-weight: 500; transition: background var(--m-5) var(--ease), color var(--m-5) var(--ease); }
   .top .tour-btn:hover { background: var(--hover); color: var(--fg); transition-duration: var(--m-1); }
-  .top .discord-btn { flex: none; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 var(--sp-3); border-radius: 13px; background: #5865f2; color: #fff; font-weight: 600; text-decoration: none; transition: background var(--m-5) var(--ease); }
-  .top .discord-btn:hover { background: #4752c4; transition-duration: var(--m-1); }
-  .top .discord-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  .top .discord-btn { flex: none; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 var(--sp-2); border-radius: var(--r-2); color: var(--fg-2); font-weight: 500; text-decoration: none; transition: background var(--m-5) var(--ease), color var(--m-5) var(--ease); }
+  .top .discord-btn:hover { background: var(--hover); color: var(--fg); transition-duration: var(--m-1); }
+  .top .discord-btn svg { width: 16px; height: 16px; fill: currentColor; stroke: none; }
   @container (max-width: 560px) { .top .tour-btn span, .top .discord-btn span { display: none; } }
   .crumbs { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; margin-left: var(--sp-2); }
   .step { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 0 1 auto; }
