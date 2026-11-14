@@ -1262,5 +1262,188 @@
     "explicit": false
    }
   ]
+ },
+ {
+  "genre": "rap",
+  "id": "scarlxrd",
+  "by": "Scarlxrd",
+  "name": "DXXM",
+  "year": 2018,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/9ebb472350063620161e8d5718ebee89/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/49934b73ad229f9bd2a52d01f984f182/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "BXILING PXINT",
+    "dur": 169,
+    "explicit": true
+   },
+   {
+    "name": "CHXKE",
+    "dur": 198,
+    "explicit": true
+   },
+   {
+    "name": "we waste time FADED",
+    "dur": 147,
+    "explicit": true
+   },
+   {
+    "name": "HELL IS XN EARTH",
+    "dur": 182,
+    "explicit": true
+   },
+   {
+    "name": "PUNCTURE",
+    "dur": 157,
+    "explicit": true
+   },
+   {
+    "name": "a BRAINDEAD civilisatixn",
+    "dur": 156,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "id": "unaverage-gang",
+  "by": "Unaverage Gang",
+  "name": "Revelations",
+  "year": 2019,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/c7d7a54536b78fd8260ac77ea653a1bf/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/f44fd286d195ac65022353a959bf92a8/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Burial Grounds (feat. Nijalveli)",
+    "dur": 179,
+    "explicit": true
+   },
+   {
+    "name": "Grind Mode",
+    "dur": 186,
+    "explicit": true
+   },
+   {
+    "name": "Helter Skelter",
+    "dur": 117,
+    "explicit": true
+   },
+   {
+    "name": "Save Me from Myself (Interlude) [feat. Schizo]",
+    "dur": 243,
+    "explicit": true
+   },
+   {
+    "name": "Blackened Sky",
+    "dur": 129,
+    "explicit": true
+   },
+   {
+    "name": "Sounds of the Morgue (feat. Nijalveli)",
+    "dur": 160,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rock",
+  "id": "bring-me-the-horizon",
+  "by": "Bring Me The Horizon",
+  "name": "That's The Spirit",
+  "year": 2015,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/dd6af81a0d098fdd32e824fd43f2635d/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/d159e783c1f419ae27fd2deca5b89b54/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Doomed",
+    "dur": 274,
+    "explicit": true
+   },
+   {
+    "name": "Happy Song",
+    "dur": 238,
+    "explicit": true
+   },
+   {
+    "name": "Throne",
+    "dur": 190,
+    "explicit": false
+   },
+   {
+    "name": "True Friends",
+    "dur": 232,
+    "explicit": false
+   },
+   {
+    "name": "Follow You",
+    "dur": 231,
+    "explicit": false
+   },
+   {
+    "name": "Drown",
+    "dur": 222,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "id": "corpse-egirls",
+  "by": "CORPSE",
+  "with": [
+   "Savage Ga$p"
+  ],
+  "single": true,
+  "name": "E-GIRLS ARE RUINING MY LIFE!",
+  "year": 2020,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/2103b82f2372be590a2f60be262d852d/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/2af868a23605acdb191d96d2ccd0b455/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "E-GIRLS ARE RUINING MY LIFE!",
+    "dur": 105,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "id": "corpse-hot-demon",
+  "by": "CORPSE",
+  "with": [
+   "Night Lovell"
+  ],
+  "single": true,
+  "name": "HOT DEMON B!TCHES NEAR U ! ! !",
+  "year": 2021,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/fcd665fd27a45614bf27037672388dc7/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/2af868a23605acdb191d96d2ccd0b455/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "HOT DEMON B!TCHES NEAR U ! ! !",
+    "dur": 96,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "id": "corpse-code-mistake",
+  "by": "CORPSE",
+  "with": [
+   "Bring Me The Horizon"
+  ],
+  "single": true,
+  "name": "CODE MISTAKE",
+  "year": 2023,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/36d9fd08db0226f610c09d168699965e/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/2af868a23605acdb191d96d2ccd0b455/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "CODE MISTAKE",
+    "dur": 165,
+    "explicit": true
+   }
+  ]
  }
 ]

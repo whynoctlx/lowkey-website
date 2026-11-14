@@ -28,7 +28,7 @@ export type Album = {
 
 const MOSAIC = import.meta.glob<string>("./mixes/*.jpg", { eager: true, query: "?url", import: "default" });
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const GENRE: Record<string, string> = { pop: "Pop", dnb: "Drum and bass", rap: "Hip-hop" };
+const GENRE: Record<string, string> = { pop: "Pop", dnb: "Drum and bass", rap: "Hip-hop", rock: "Rock" };
 
 export const albums: Album[] = catalog.map((c) => {
   const a: Album = { id: (c as { id?: string }).id ?? slug(c.by), kind: "Album", name: c.name, by: c.by, with: (c as { with?: string[] }).with, single: (c as { single?: boolean }).single, year: c.year, cover: c.cover, artistImage: c.artistImage, genre: GENRE[c.genre], h: 0, h2: 0, art: 0, tracks: [] };
@@ -49,10 +49,12 @@ const mix = (id: string, name: string, h: number, h2: number, art: number, refs:
 };
 
 export const playlists: Album[] = [
-  list("late-night", "Late Night Drive", 248, 318, 0, pick("redzed-junkie:2", "sub-focus:0", "travis-scott:5", "dua-lipa:1", "pendulum:0", "redzed-noise:0")),
-  list("gym", "Gym", 10, 30, 2, pick("pendulum:3", "chase-status:0", "kendrick-lamar:3", "travis-scott:1", "dimension:1", "eminem:1")),
-  list("sunday", "Sunday Slow", 36, 52, 1, pick("gzuz:3", "bonez-mc:5", "billie-eilish:2", "post-malone:5", "ariana-grande:3", "j-cole:5")),
-  list("summer", "Summer '25", 330, 40, 4, pick("dua-lipa:0", "chappell-roan:5", "redzed:0", "rudimental:0", "doja-cat:5", "gzuz:1")),
+  list("late-night", "Late Night Drive", 248, 318, 0, pick("redzed-junkie:2", "corpse-hot-demon:0", "scarlxrd:2", "pil-c:1", "chase-status:3", "redzed-noise:0")),
+  list("gym", "Gym", 10, 30, 2, pick("unaverage-gang:2", "scarlxrd:0", "chase-status:0", "bring-me-the-horizon:2", "pendulum:3", "redzed:1", "corpse-code-mistake:0")),
+  list("sunday", "Sunday Slow", 36, 52, 1, pick("pil-c:2", "bring-me-the-horizon:4", "redzed:3", "luca-brassi10x:3", "post-malone:5", "separ:2")),
+  list("summer", "Summer '25", 330, 40, 4, pick("chase-status:1", "pil-c:0", "redzed-junkie:0", "corpse-egirls:0", "rudimental:0", "dua-lipa:0")),
+  list("heavy", "Heavy Rotation", 0, 340, 2, pick("bring-me-the-horizon:0", "scarlxrd:1", "unaverage-gang:0", "corpse-code-mistake:0", "bring-me-the-horizon:3", "scarlxrd:3", "unaverage-gang:4")),
+  list("night-shift", "Night Shift", 270, 250, 3, pick("redzed-noise:1", "pil-c:3", "scarlxrd:4", "corpse-egirls:0", "unaverage-gang:1", "chase-status:4", "redzed-junkie:4")),
 ];
 
 export const mixes: Album[] = [
