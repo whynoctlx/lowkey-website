@@ -15,7 +15,7 @@
   import AddTo from "./AddTo.svelte";
   import { enter, exit, initMotion, motion } from "./motion.svelte";
   import { holdTiles } from "./tiles";
-  import Site, { SITE, type SitePage, getLatest, DISCORD, DISCORD_LOGO } from "./Site.svelte";
+  import Site, { SITE, LEGAL, type SitePage, getLatest, DISCORD, DISCORD_LOGO } from "./Site.svelte";
   import Settings from "./Settings.svelte";
   import Tour, { type Stop } from "./Tour.svelte";
   import * as demo from "./demo";
@@ -123,8 +123,10 @@
     const m = members.get(uri);
     return m ? [...t.filter((x) => m.has(x.uri)), ...[...m].filter((u) => !t.some((x) => x.uri === u)).map((u) => demo.tracks.get(u)!)] : t;
   };
-  const siteRows: Row[] = SITE.map((s) => ({ uri: s.uri, name: s.name, icon: s.icon, kind: "site", line: "" }));
-  const sitePage = (uri?: string) => (SITE.some((s) => s.uri === uri) ? (uri!.slice(7) as SitePage) : null);
+  const asRow = (s: (typeof SITE)[number]): Row => ({ uri: s.uri, name: s.name, icon: s.icon, kind: "site", line: "" });
+  const siteRows = SITE.map(asRow);
+  const legalRows = LEGAL.map(asRow);
+  const sitePage = (uri?: string) => ([...SITE, ...LEGAL].some((s) => s.uri === uri) ? (uri!.slice(7) as SitePage) : null);
   const tracks = $derived(selected && !sitePage(selected.uri) ? (selected.uri === RECENT ? played : loaded(selected.uri)) : null);
   const info = $derived(selected && selected.uri !== RECENT && !sitePage(selected.uri) ? demo.itemData(selected.uri).info : {});
 
@@ -455,7 +457,7 @@
           recent={libRecent && played.length ? { uri: RECENT, name: L.app.recentlyPlayed, kind: "recent", line: `${L.kind.playlist} · ${L.common.songs(played.length)}` } : undefined}
           open={(r) => open(r, true)} home={goHome} homeOn={homeOpen && !searchOpen} reload={() => {}} login={() => {}}
           {pins} setPins={(p) => (pins = p)} sort={libSort} setSort={(s) => (libSort = s)} {playedAt} play={playContext} density={libDensity} setDensity={(d) => (libDensity = d)}
-          site={siteRows} showRecent={libRecent} setShowRecent={(on) => (libRecent = on)}
+          site={siteRows} legal={legalRows} showRecent={libRecent} setShowRecent={(on) => (libRecent = on)}
           remove={(r) => (setSaved(r, false), (pins = pins.filter((u) => u !== r.uri)))}
         />
       </div>

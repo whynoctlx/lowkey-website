@@ -21,12 +21,17 @@
   export const GITHUB = "https://github.com/whynoctlx";
   export const DISCORD = "https://discord.gg/ErKZHrrRXp";
   export const DISCORD_LOGO = "M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52.07.07 0 0 0-.08.04c-.21.38-.44.87-.61 1.25a18.27 18.27 0 0 0-5.49 0 12.64 12.64 0 0 0-.62-1.25.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.99 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-1.99a.08.08 0 0 0-.04-.11 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .08.01l.37.29a.08.08 0 0 1-.01.13c-.6.35-1.22.65-1.87.89a.08.08 0 0 0-.04.11c.36.7.77 1.36 1.22 1.99a.08.08 0 0 0 .09.03 19.84 19.84 0 0 0 6-3.03.08.08 0 0 0 .03-.06c.5-5.18-.84-9.67-3.55-13.66a.06.06 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.95 2.42-2.16 2.42z";
-  export type SitePage = "hero" | "features" | "compare" | "download";
+  export type SitePage = "hero" | "features" | "compare" | "download" | "privacy" | "terms";
   /** The sidebar's Lowkey section: uri, name, icon path(s). */
   export const SITE: { uri: string; name: string; icon: string }[] = [
     { uri: "lowkey:features", name: "Features", icon: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" },
     { uri: "lowkey:compare", name: "Side by side", icon: "M4 5h16M4 12h16M4 19h16M10 5v14" },
     { uri: "lowkey:download", name: "Download", icon: "M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" },
+  ];
+  /** The sidebar's Legal section, under Lowkey: same shape as SITE. */
+  export const LEGAL: { uri: string; name: string; icon: string }[] = [
+    { uri: "lowkey:privacy", name: "Privacy policy", icon: "M12 3.5 5 6v5.5c0 4.2 3 7.8 7 9 4-1.2 7-4.8 7-9V6z" },
+    { uri: "lowkey:terms", name: "Terms of use", icon: "M7 3.5h7l4 4v13H7zM14 3.5v4h4M10 12h5M10 16h5" },
   ];
 </script>
 
@@ -78,6 +83,36 @@
     ["No Lowkey account, no Lowkey server", "There is nothing of ours to sign up for. The app talks to Spotify directly, the same way Spotify's own app does."],
     ["Your sign-in stays on this computer", "Your Spotify session and Soloist key are stored encrypted (ChaCha20-Poly1305) with a key tied to this machine, so they're useless in a backup or on another computer."],
     ["One other request: updates", "Lowkey checks GitHub for a newer release. It downloads a small file and sends nothing about you or your music."],
+  ];
+  /** The Privacy policy and Terms of use pages: section title, paragraphs. */
+  const privacyPolicy: [string, string[]][] = [
+    ["Who we are", ["Lowkey is a free, non-commercial app made by whynoctlx. It is an unofficial, independent project, not affiliated with, endorsed by or sponsored by Spotify AB. Questions about this policy go to our Discord or GitHub, linked on the Download page."]],
+    ["The app", [
+      "Lowkey has no analytics, no telemetry, no crash reporter and no ads. Nothing about how you use it is recorded or sent to us. There is no Lowkey account and no Lowkey server.",
+      "The app talks to Spotify directly, to sign you in, show your library and play music, and to GitHub, to check for updates. What Spotify does with that data is covered by Spotify's own privacy policy.",
+      "Your Spotify session and Soloist key are stored only on your computer, encrypted (ChaCha20-Poly1305) with a key tied to that machine. Your settings stay on your computer too. Uninstalling Lowkey and deleting its app data removes them.",
+    ]],
+    ["This website", [
+      "This website sets no cookies and runs no analytics or trackers. The window on it is a demo on made-up data: it never signs in to Spotify and plays no music.",
+      "Your theme, accent and motion choices are saved in your browser's local storage so they stay the same on your next visit. They never leave your browser.",
+      "When you press Download, your browser asks GitHub for the newest release and downloads it from GitHub. Cover images come from the servers they are hosted on. Those services, and the host serving this site, may see your IP address and keep ordinary server logs, as any website does.",
+    ]],
+    ["Changes", ["If this policy changes, the new version will be on this page with a new date."]],
+  ];
+  const terms: [string, string[]][] = [
+    ["Using Lowkey", [
+      "Lowkey is free to download and use for personal, non-commercial purposes. You need your own Spotify Premium account and your own Soloist API key. Using Lowkey doesn't change your agreement with Spotify: you are still bound by Spotify's terms.",
+      "Don't use Lowkey to get around Spotify's subscription, copy or redistribute music, or sell or repackage the app.",
+    ]],
+    ["Not affiliated with Spotify", [
+      "Lowkey is an unofficial, independent project, not affiliated with, endorsed by or sponsored by Spotify AB. Spotify is a trademark of Spotify AB.",
+      "Lowkey signs in with Spotify's desktop client ID and reads some undocumented Spotify endpoints. These may change, stop working or be restricted at any time and may not comply with Spotify's terms. Use Lowkey at your own risk, including any risk to your Spotify account.",
+    ]],
+    ["No warranty", [
+      "Lowkey and this website are provided “as is”, without warranty of any kind, express or implied, including fitness for a particular purpose. Features may change or stop working at any time.",
+      "To the extent the law allows, whynoctlx is not liable for any damage or loss arising from using Lowkey or this website.",
+    ]],
+    ["Updates and changes", ["Lowkey updates itself with signed releases from GitHub. These terms may change; the current version is always on this page with its date, and using Lowkey after a change means you accept it."]],
   ];
   /** The comparison in groups. Each row: aspect, Spotify, Lowkey, Spotatui; `win` marks a row where Lowkey leads. */
   type Row = { k: string; v: [string, string, string]; win?: boolean };
@@ -287,6 +322,28 @@
         <h2 class="t-section">Try the difference yourself</h2>
         {@render get()}
       </section>
+    {:else if page === "privacy"}
+      <header class="head">
+        <h1 class="t-page">Privacy policy</h1>
+        <p class="lede">Short, because there is little to say: Lowkey collects nothing about you. Last updated 14 November 2026.</p>
+      </header>
+      {#each privacyPolicy as [title, paras] (title)}
+        <section class="group">
+          <h2 class="t-section">{title}</h2>
+          <div class="card prose">{#each paras as p (p)}<p>{p}</p>{/each}</div>
+        </section>
+      {/each}
+    {:else if page === "terms"}
+      <header class="head">
+        <h1 class="t-page">Terms of use</h1>
+        <p class="lede">The rules for using Lowkey and this website. Last updated 14 November 2026.</p>
+      </header>
+      {#each terms as [title, paras] (title)}
+        <section class="group">
+          <h2 class="t-section">{title}</h2>
+          <div class="card prose">{#each paras as p (p)}<p>{p}</p>{/each}</div>
+        </section>
+      {/each}
     {:else}
       <!-- Download and About in one: as the app's Settings › About, the mark without its tile, name, one line, the pillars and the copyright, centred; then groups. -->
       <header class="about">
