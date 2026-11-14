@@ -59,12 +59,14 @@ export const LIKED = "spotify:user:demo:collection";
 
 const al = (id: string) => albums.find((a) => a.id === id)!;
 
+const NEW = ["Luca Brassi10x", "Separ", "Pil C", "Scarlxrd", "Unaverage Gang", "Bring Me The Horizon"];
 export const lib: Lib = {
   liked: { uri: LIKED, count: likedTracks.length, uris: likedTracks.map((t) => t.uri) },
-  playlists: [...playlists, ...mixes.slice(0, 9)].map(item),
+  playlists: [...playlists, ...mixes.slice(0, 9).filter((m) => !m.id.startsWith("daily-"))].map(item),
   // A few albums only: the library is mostly playlists.
   albums: ["redzed-junkie", "pil-c", "chase-status", "scarlxrd", "bring-me-the-horizon"].map((id) => item(al(id))),
-  artists: names.filter((n) => albums.some((a) => a.by === n && !a.single)).map(artistItem),
+  // The newest follows first (the "Recently added" order).
+  artists: names.filter((n) => albums.some((a) => a.by === n && !a.single)).sort((a, b) => +NEW.includes(b) - +NEW.includes(a)).map(artistItem),
 };
 
 type Card = LibItem & { kind: "playlists" | "albums" | "artists" };

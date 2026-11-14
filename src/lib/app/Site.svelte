@@ -1,6 +1,7 @@
 <!-- The website's own pages, drawn as pages of the app: its .view, .t-page head, .t-section labels, hairline cards
      and raised buttons. "hero" sits above Home's feed; the rest open from the sidebar's Lowkey section. -->
 <script lang="ts" module>
+  import { motion } from "./motion.svelte";
   export const RELEASES = "https://github.com/whynoctlx/lowkey-build/releases";
   /** The installer files of the newest release, by their ending (Tauri's names: Lowkey_<version>_<arch>…). */
   const FILES: Record<string, RegExp> = { mac: /_aarch64\.dmg$/, win: /_x64-setup\.exe$/ };
@@ -10,6 +11,8 @@
   /** Download the newest installer for `os`, asked of GitHub in the visitor's browser, so a new release needs no
    *  change here. If GitHub can't answer (offline, its 60-an-hour limit per visitor), the releases page instead. */
   export async function getLatest(os: string) {
+    // Counted on our server (once per browser); keepalive lets it finish as the page goes to the installer.
+    fetch("/api/downloads", { method: "POST", keepalive: true }).then((r) => r.json()).then((d: { total: number }) => (count.total = count.shown = d.total)).catch(() => {});
     let url = RELEASES;
     try {
       const res = await fetch("https://api.github.com/repos/whynoctlx/lowkey-build/releases/latest");
@@ -17,6 +20,26 @@
       url = release.assets.find((a) => FILES[os]?.test(a.name))?.browser_download_url ?? RELEASES;
     } catch {}
     location.href = url;
+  }
+  /** Total downloads (Turso, via /api/downloads), shared by every page that shows it: fetched once per visit.
+   *  total is undefined while it loads (a dash holds its place) and null if it can't (the fact steps aside);
+   *  shown rolls up to it once (ease-out, ~0.9s), or lands at once with motion off. */
+  const count = $state<{ total?: number | null; shown: number }>({ shown: 0 });
+  let asked = false;
+  function loadCount() {
+    if (asked) return;
+    asked = true;
+    fetch("/api/downloads").then((r) => (r.ok ? r.json() : Promise.reject())).then((d: { total: number }) => {
+      count.total = d.total;
+      if (motion.reduce || !motion.ms || d.total < 2) return void (count.shown = d.total);
+      const t0 = performance.now();
+      const step = (t: number) => {
+        const k = Math.min(1, (t - t0) / 900);
+        count.shown = Math.round(d.total * (1 - (1 - k) ** 4));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }).catch(() => (count.total = null));
   }
   export const GITHUB = "https://github.com/whynoctlx";
   export const DISCORD = "https://discord.gg/ErKZHrrRXp";
@@ -40,6 +63,8 @@
 
   let { page }: { page: SitePage } = $props();
   const tour = () => dispatchEvent(new Event("lowkey:tour"));
+
+  $effect(loadCount);
 
   const platforms = [
     { os: "mac", name: "macOS", detail: "Apple Silicon", logo: "M12.15 6.9c-.95 0-2.42-1.08-3.96-1.04-2.04.03-3.91 1.18-4.96 3.01-2.12 3.68-.55 9.1 1.52 12.09 1.01 1.45 2.2 3.09 3.79 3.04 1.52-.07 2.09-.99 3.94-.99 1.83 0 2.35.99 3.96.95 1.64-.03 2.68-1.48 3.68-2.95 1.16-1.69 1.64-3.33 1.66-3.42-.04-.01-3.18-1.22-3.22-4.86-.03-3.04 2.48-4.49 2.6-4.56-1.43-2.09-3.62-2.32-4.39-2.38-2-.16-3.68 1.09-4.62 1.09zm3.38-3.07c.84-1.01 1.4-2.43 1.25-3.83-1.21.05-2.66.8-3.53 1.82-.78.9-1.46 2.34-1.27 3.71 1.34.1 2.71-.69 3.55-1.7z" },
@@ -84,35 +109,69 @@
     ["Your sign-in stays on this computer", "Your Spotify session and Soloist key are stored encrypted (ChaCha20-Poly1305) with a key tied to this machine, so they're useless in a backup or on another computer."],
     ["One other request: updates", "Lowkey checks GitHub for a newer release. It downloads a small file and sends nothing about you or your music."],
   ];
-  /** The Privacy policy and Terms of use pages: section title, paragraphs. */
-  const privacyPolicy: [string, string[]][] = [
-    ["Who we are", ["Lowkey is a free, non-commercial app made by whynoctlx. It is an unofficial, independent project, not affiliated with, endorsed by or sponsored by Spotify AB. Questions about this policy go to our Discord or GitHub, linked on the Download page."]],
-    ["The app", [
-      "Lowkey has no analytics, no telemetry, no crash reporter and no ads. Nothing about how you use it is recorded or sent to us. There is no Lowkey account and no Lowkey server.",
-      "The app talks to Spotify directly, to sign you in, show your library and play music, and to GitHub, to check for updates. What Spotify does with that data is covered by Spotify's own privacy policy.",
-      "Your Spotify session and Soloist key are stored only on your computer, encrypted (ChaCha20-Poly1305) with a key tied to that machine. Your settings stay on your computer too. Uninstalling Lowkey and deleting its app data removes them.",
+  /** The Privacy policy and Terms of use: [section, blocks]; a block is a paragraph, or a list when it's an array.
+      Each fact lives in one document only: data and cookies in the policy, rules, risk and Spotify in the terms. */
+  type Doc = [string, (string | string[])[]][];
+  const UPDATED = "14 November 2026";
+  const privacyPolicy: Doc = [
+    ["Who is responsible", [
+      "Lowkey and this website are made and run by whynoctlx, an independent developer. For any question or request about this policy or your data, contact us on Discord or through our GitHub repository; both are linked on the Download page.",
+    ]],
+    ["The Lowkey app", [
+      "The app collects nothing about you. It has no account of ours, no server of ours, no analytics, no telemetry, no crash reporting and no ads.",
+      "It connects to two services only:",
+      [
+        "Spotify, to sign you in, show your library and play music. Spotify handles that data under its own privacy policy.",
+        "GitHub, to check for and download updates. The check sends nothing about you or your listening.",
+      ],
+      "Your Spotify session and Soloist key are stored only on your computer, encrypted (ChaCha20-Poly1305) with a key tied to that machine. Your settings stay on your computer as well. Uninstalling Lowkey and deleting its app data removes all of it.",
     ]],
     ["This website", [
-      "This website sets no cookies and runs no analytics or trackers. The window on it is a demo on made-up data: it never signs in to Spotify and plays no music.",
-      "Your theme, accent and motion choices are saved in your browser's local storage so they stay the same on your next visit. They never leave your browser.",
-      "When you press Download, your browser asks GitHub for the newest release and downloads it from GitHub. Cover images come from the servers they are hosted on. Those services, and the host serving this site, may see your IP address and keep ordinary server logs, as any website does.",
+      "The site runs no analytics, advertising or tracking. The app window on it is a demo on made-up data: it never signs in to Spotify and plays no music.",
+      [
+        "Download count. When you start a download we add one to a single running total. Nothing else is stored with it: no IP address, no browser details, nothing that identifies you.",
+        "One cookie, lk_dl. It is set when you start a download, holds only the value 1 and expires after a year. It exists so each browser is counted once, and is never used to recognise or follow you.",
+        "Preferences. Your theme, accent and motion choices are kept in your browser's local storage so they persist between visits. They are never sent to us.",
+      ],
     ]],
-    ["Changes", ["If this policy changes, the new version will be on this page with a new date."]],
+    ["Service providers", [
+      "Like any website, the services that deliver this one may see your IP address and keep ordinary server logs under their own policies: our hosting provider, our database provider (which holds only the download total), GitHub (which serves the installers) and the hosts of the cover images shown in the demo.",
+    ]],
+    ["Your choices and rights", [
+      "Because we hold no personal data about you, there is nothing for us to access, correct or delete. You can remove the cookie and stored preferences at any time by clearing this site's data in your browser. If you are in the EU or UK, you also have the right to complain to your data protection authority.",
+    ]],
+    ["Changes to this policy", [
+      "When this policy changes, the new version is published on this page with a new date.",
+    ]],
   ];
-  const terms: [string, string[]][] = [
-    ["Using Lowkey", [
-      "Lowkey is free to download and use for personal, non-commercial purposes. You need your own Spotify Premium account and your own Soloist API key. Using Lowkey doesn't change your agreement with Spotify: you are still bound by Spotify's terms.",
-      "Don't use Lowkey to get around Spotify's subscription, copy or redistribute music, or sell or repackage the app.",
+  const terms: Doc = [
+    ["Agreement", [
+      "These terms apply to the Lowkey app and this website. By downloading or using either, you agree to them. If you don't, please don't use them.",
     ]],
-    ["Not affiliated with Spotify", [
+    ["Using Lowkey", [
+      "Lowkey is free to download and use for personal, non-commercial purposes. To use it you need your own Spotify Premium account and your own Soloist API key. You agree not to:",
+      [
+        "use Lowkey to get around Spotify's subscription, or to copy, record or redistribute music;",
+        "sell, rent or repackage Lowkey, or distribute modified copies presented as Lowkey;",
+        "use Lowkey in a way that breaks the law or harms Spotify's service or other people.",
+      ],
+    ]],
+    ["Spotify", [
       "Lowkey is an unofficial, independent project, not affiliated with, endorsed by or sponsored by Spotify AB. Spotify is a trademark of Spotify AB.",
-      "Lowkey signs in with Spotify's desktop client ID and reads some undocumented Spotify endpoints. These may change, stop working or be restricted at any time and may not comply with Spotify's terms. Use Lowkey at your own risk, including any risk to your Spotify account.",
+      "Your agreement with Spotify still applies when you use Lowkey. Lowkey signs in with Spotify's desktop client ID and relies on undocumented Spotify endpoints, which may change, stop working or be restricted at any time and may not comply with Spotify's terms. You use Lowkey at your own risk, including any risk to your Spotify account.",
+    ]],
+    ["Updates", [
+      "Lowkey installs signed updates from GitHub. Features may change, be added or be removed at any time, and we may stop developing Lowkey without notice.",
     ]],
     ["No warranty", [
-      "Lowkey and this website are provided “as is”, without warranty of any kind, express or implied, including fitness for a particular purpose. Features may change or stop working at any time.",
-      "To the extent the law allows, whynoctlx is not liable for any damage or loss arising from using Lowkey or this website.",
+      "Lowkey and this website are provided “as is” and “as available”, without warranty of any kind, express or implied, including merchantability, fitness for a particular purpose and non-infringement.",
     ]],
-    ["Updates and changes", ["Lowkey updates itself with signed releases from GitHub. These terms may change; the current version is always on this page with its date, and using Lowkey after a change means you accept it."]],
+    ["Limitation of liability", [
+      "To the fullest extent the law allows, whynoctlx is not liable for any indirect, incidental or consequential damage, or any loss of data, account access or profit, arising from your use of Lowkey or this website. Nothing in these terms limits liability that cannot be limited by law.",
+    ]],
+    ["Changes to these terms", [
+      "We may update these terms. The current version is always published on this page with its date, and continuing to use Lowkey after a change means you accept it.",
+    ]],
   ];
   /** The comparison in groups. Each row: aspect, Spotify, Lowkey, Spotatui; `win` marks a row where Lowkey leads. */
   type Row = { k: string; v: [string, string, string]; win?: boolean };
@@ -186,25 +245,28 @@
         <!-- Not built yet: the same button, inert, saying when. -->
         <p class={["raised", "main", "soon", me.os]}>
           <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={me.logo} /></svg>
-          <span><b>Coming soon for {me.name}</b><small>{me.detail}</small></span>
+          <span class="words"><b>Coming soon for {me.name}</b><small>{me.detail}</small></span>
         </p>
       {:else}
         <a class={["raised", "main", me.os]} href={DOWNLOAD(me.os)} onclick={(e) => (e.preventDefault(), getLatest(me.os))}>
           <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={me.logo} /></svg>
-          <span><b>Download for {me.name}</b><small>{me.detail}</small></span>
+          <span class="words"><b>Download for {me.name}</b><small>Free · {me.detail}</small></span>
         </a>
       {/if}
-      <p class="also">
-        Free, forever<span aria-hidden="true">·</span>
+      <!-- The other platform, right under the button: a small labelled row with its logo. -->
+      <p class="other">
+        <span>Other platforms</span>
         {#if other.soon}
-          <span class="later"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={other.logo} /></svg>{other.name} coming soon</span>
+          <span class="plat"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={other.logo} /></svg>{other.name}<em>Soon</em></span>
         {:else}
-          {me.soon ? "Available now for" : "Also for"}
-          <a href={DOWNLOAD(other.os)} onclick={(e) => (e.preventDefault(), getLatest(other.os))}><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={other.logo} /></svg>{other.name}</a>
+          <a class="plat" href={DOWNLOAD(other.os)} onclick={(e) => (e.preventDefault(), getLatest(other.os))}><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={other.logo} /></svg>{other.name}</a>
         {/if}
       </p>
-      <!-- The community, right under the download: in Discord's own blurple so it reads at a glance. -->
-      <a class="discord" href={DISCORD} target="_blank" rel="noopener"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={DISCORD_LOGO} /></svg>Join us on Discord</a>
+      <!-- Two pills in one row: the count in the app's own sunk surface, the community in Discord's blurple. -->
+      <div class="pills">
+        {#if count.total !== null}<p class="count" aria-live="polite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" /></svg><b>{count.total === undefined ? "–" : count.shown.toLocaleString("en")}</b> {count.total === 1 ? "download" : "downloads"}</p>{/if}
+        <a class="discord" href={DISCORD} target="_blank" rel="noopener"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={DISCORD_LOGO} /></svg>Join us on Discord</a>
+      </div>
     </div>
   {/each}
 {/snippet}
@@ -324,28 +386,26 @@
         <h2 class="t-section">Try the difference yourself</h2>
         {@render get()}
       </section>
-    {:else if page === "privacy"}
+    {:else if page === "privacy" || page === "terms"}
+      {@const [title, lede, doc] = page === "privacy"
+        ? ["Privacy policy", "Lowkey collects no personal data. This policy explains what the app and this website handle, and who else is involved.", privacyPolicy]
+        : ["Terms of use", "The terms for using the Lowkey app and this website.", terms]}
       <header class="head">
-        <h1 class="t-page">Privacy policy</h1>
-        <p class="lede">Short, because there is little to say: Lowkey collects nothing about you. Last updated 14 November 2026.</p>
+        <h1 class="t-page">{title}</h1>
+        <p class="lede">{lede}</p>
       </header>
-      {#each privacyPolicy as [title, paras] (title)}
-        <section class="group">
-          <h2 class="t-section">{title}</h2>
-          <div class="card prose">{#each paras as p (p)}<p>{p}</p>{/each}</div>
-        </section>
-      {/each}
-    {:else if page === "terms"}
-      <header class="head">
-        <h1 class="t-page">Terms of use</h1>
-        <p class="lede">The rules for using Lowkey and this website. Last updated 14 November 2026.</p>
-      </header>
-      {#each terms as [title, paras] (title)}
-        <section class="group">
-          <h2 class="t-section">{title}</h2>
-          <div class="card prose">{#each paras as p (p)}<p>{p}</p>{/each}</div>
-        </section>
-      {/each}
+      <!-- One document card: sections split by hairlines, readable measure, the date at the foot. -->
+      <article class="card doc">
+        {#each doc as [name, blocks] (name)}
+          <section>
+            <h2>{name}</h2>
+            {#each blocks as b, i (i)}
+              {#if typeof b === "string"}<p>{b}</p>{:else}<ul>{#each b as li (li)}<li>{li}</li>{/each}</ul>{/if}
+            {/each}
+          </section>
+        {/each}
+        <p class="updated">Last updated {UPDATED}</p>
+      </article>
     {:else}
       <!-- Download and About in one: as the app's Settings › About, the mark without its tile, name, one line, the pillars and the copyright, centred; then groups. -->
       <header class="about">
@@ -366,23 +426,21 @@
         </svg>
         <h1 class="t-section wordmark">low<span>key</span></h1>
         <p class="desc">Spotify, quieter.</p>
-        <ul class="pillars"><li>Native</li><li>Light</li><li>Free</li></ul>
-        <p class="fine">© 2026 <a href={GITHUB}>whynoctlx</a>. Unofficial app, not affiliated with Spotify.</p>
       </header>
 
-      {@render get()}
-      <div class="two">
-        <section>
+      <!-- One quiet column under the button: what you need, what it can't do yet, the why, the links. -->
+      <div class="dl">
+        {@render get()}
+        <section class="group">
           <h2 class="t-section">You'll need</h2>
           <dl class="card">
             <dt>Spotify Premium</dt><dd>Your own account</dd>
             <dt>A Soloist API key</dt><dd>Entered in Settings</dd>
-            <dt>macOS</dt><dd>On Apple Silicon</dd>
-            <dt>Windows</dt><dd>Coming soon: x64, Windows 10 or 11</dd>
+            <dt>A Mac with Apple Silicon</dt><dd>Windows is coming</dd>
           </dl>
-          <p class="small">Lowkey downloads Soloist from Spotify's servers on first run. It is never bundled. Linux builds exist but are unsupported.</p>
+          <p class="small">Lowkey downloads Soloist from Spotify's servers on first run; it is never bundled.</p>
         </section>
-        <section>
+        <section class="group">
           <h2 class="t-section">Not yet possible</h2>
           <dl class="card">
             <dt>Starting a list at a track</dt><dd>Clicking a track plays only that track</dd>
@@ -390,37 +448,21 @@
             <dt>Intel Macs</dt><dd>Soloist runs on Apple Silicon only</dd>
             <dt>Mac App Store</dt><dd>Vibrancy uses a private macOS API</dd>
           </dl>
-          <p class="small">These come from Soloist or Spotify, not from Lowkey.</p>
         </section>
+        <section class="group">
+          <h2 class="t-section">Liner notes</h2>
+          <div class="prose">
+            <p>I've been a Spotify Premium user for about three years. I built Lowkey because I wanted everyday Spotify to feel calmer, faster and more native.</p>
+            <p>Lowkey is a new face for Spotify, not a new Spotify. Your account, your library and Spotify's own playback stay exactly as they are. Lowkey only changes the window you look at. It doesn't compete with Spotify or try to replace it.</p>
+            <p>It is free for everyone and always will be. No subscription, no paid features, no ads.</p>
+            <p>It is also built to harm Spotify as little as possible. That's why it requires your own Spotify Premium and never works around Spotify's subscription. Playback runs through Soloist, Spotify's official player, so every stream counts as usual.</p>
+          </div>
+        </section>
+        <footer class="links">
+          <nav aria-label="Links"><a href={GITHUB}>GitHub</a><a href={DISCORD}>Discord</a><a href={RELEASES}>All releases</a></nav>
+          <p>© 2026 whynoctlx · Unofficial app, not affiliated with Spotify</p>
+        </footer>
       </div>
-
-      <section class="group">
-        <h2 class="t-section">Liner notes</h2>
-        <div class="card prose">
-          <p>I've been a Spotify Premium user for about three years. I built Lowkey because I wanted everyday Spotify to feel calmer, faster and more native.</p>
-          <p>Lowkey is a new face for Spotify, not a new Spotify. Your account, your library and Spotify's own playback stay exactly as they are. Lowkey only changes the window you look at. It doesn't compete with Spotify or try to replace it.</p>
-          <p>It is free for everyone and always will be. No subscription, no paid features, no ads.</p>
-          <p>It is also built to harm Spotify as little as possible. That's why it requires your own Spotify Premium and never works around Spotify's subscription. Playback runs through Soloist, Spotify's official player, so every stream counts as usual.</p>
-        </div>
-      </section>
-
-      <section class="group">
-        <h2 class="t-section">Links</h2>
-        <div class="card rows">
-          <div class="row">
-            <div><p class="name">GitHub</p><p class="hint">Made by whynoctlx. Free and non-commercial, forever.</p></div>
-            <a class="raised-n btn" href={GITHUB}>Open</a>
-          </div>
-          <div class="row">
-            <div><p class="name">Discord</p><p class="hint">Talk to us, ask for help, suggest what comes next</p></div>
-            <a class="raised-n btn" href={DISCORD}>Open</a>
-          </div>
-          <div class="row">
-            <div><p class="name">All releases</p><p class="hint">Every version, with its changes</p></div>
-            <a class="raised-n btn" href={RELEASES}>Open</a>
-          </div>
-        </div>
-      </section>
     {/if}
   </article>
 {/if}
@@ -469,32 +511,42 @@
   :global(html:not([data-os="win"])) .get[data-for="win"], :global(html[data-os="win"]) .get[data-for="mac"] { display: none !important; }
   .get { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-4); margin-top: var(--sp-5); }
   .get .main { display: inline-flex; align-items: center; gap: var(--sp-3); min-height: 56px; padding: var(--sp-2) var(--sp-7) var(--sp-2) var(--sp-5); text-align: left; text-decoration: none; }
-  .get .main span { display: flex; flex-direction: column; gap: 2px; }
+  .get .words { display: flex; flex-direction: column; gap: 2px; }
   .get .main b { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
   .get .main small { font-size: var(--meta-fs); font-weight: 500; line-height: 1.2; opacity: 0.78; }
-  .get .main .logo { width: 24px; height: 24px; }
+  .get .main .logo { width: 22px; height: 22px; }
+  .get .main:active { transform: translateY(1px); }
+  .get .main:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .get .mac { border-radius: 28px; }
   .get .mac .logo { margin-top: -3px; }
   .get .win { border-radius: var(--r-1); }
-  .get .win .logo { width: 20px; height: 20px; }
+  .get .win .logo { width: 19px; height: 19px; }
   .get .logo { flex: none; fill: currentColor; }
-  .also { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin: 0; color: var(--fg-2); font-size: var(--sub-fs); }
-  .also a { display: inline-flex; align-items: center; gap: 6px; color: var(--fg); font-weight: 600; text-decoration: none; transition: color var(--m-5) var(--ease); }
-  .also a:hover { color: var(--accent); transition-duration: var(--m-1); }
-  .also .logo { width: 13px; height: 13px; }
+
+  .pills { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
+  .count { display: inline-flex; align-items: center; gap: var(--sp-2); height: 36px; margin: 0; padding: 0 var(--sp-4); border-radius: 18px; background: var(--sunk); box-shadow: inset 0 0 0 0.5px var(--sunk-edge); color: var(--fg-2); font-size: var(--sub-fs); font-weight: 500; }
+  .count b { color: var(--fg); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .count svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .other { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--sp-2); margin: calc(-1 * var(--sp-1)) 0 0; color: var(--fg-3); font-size: var(--sub-fs); }
+  .other .plat { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-2); font-weight: 500; text-decoration: none; transition: color var(--m-5) var(--ease); }
+  .other a.plat:hover { color: var(--accent); transition-duration: var(--m-1); }
+  .other .logo { width: 13px; height: 13px; fill: currentColor; }
+  .other em { margin-left: 2px; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--fg-3); font-size: var(--meta-fs); font-style: normal; font-weight: 500; }
   .discord { display: inline-flex; align-items: center; gap: var(--sp-2); height: 36px; padding: 0 var(--sp-4); border-radius: 18px; background: color-mix(in srgb, #5865f2 14%, transparent); color: var(--fg); font-size: var(--sub-fs); font-weight: 600; text-decoration: none; transition: background var(--m-5) var(--ease); }
   .discord:hover { background: color-mix(in srgb, #5865f2 24%, transparent); transition-duration: var(--m-1); }
   .discord .logo { width: 18px; height: 18px; fill: #5865f2; }
   :global(html.dark) .discord .logo { fill: #8891f7; }
-  .also .later { display: inline-flex; align-items: center; gap: 6px; }
   .get .main.soon { margin: 0; opacity: 0.6; pointer-events: none; }
-  /* On a page the buttons sit centred in their own panel, lit faintly by the playing cover like the hero. */
-  .view .get {
-    align-items: center; margin: 0 0 var(--sp-6); padding: var(--sp-7) var(--sp-5);
-    border: 0.5px solid var(--border-strong); border-radius: var(--r-3);
-    background: radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--now) 12%, transparent), transparent 75%), color-mix(in srgb, var(--panel) 60%, transparent);
-    transition: background var(--m-7) var(--ease);
-  }
+  /* On a page the buttons sit centred under the page's head, flat: no panel of their own. */
+  .view .get { align-items: center; margin: 0 0 var(--sp-7); }
+  .dl { max-width: 620px; margin: 0 auto; }
+  .dl .prose { padding: 0; }
+  .dl .prose p:first-child { color: var(--fg-2); }
+  .links { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); margin-top: var(--sp-7); padding-top: var(--sp-5); border-top: 0.5px solid var(--border); text-align: center; }
+  .links nav { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-5); }
+  .links a { color: var(--fg); font-size: var(--fs); font-weight: 500; text-decoration: none; transition: color var(--m-5) var(--ease); }
+  .links a:hover { color: var(--accent); transition-duration: var(--m-1); }
+  .links p { margin: 0; color: var(--fg-3); font-size: var(--sub-fs); }
 
   .card { margin: 0; padding: 0; border: 0.5px solid var(--border-strong); border-radius: var(--r-3); list-style: none; background: color-mix(in srgb, var(--panel) 60%, transparent); }
 
@@ -566,31 +618,25 @@
   :global(html.dark) .logo .refl { fill: #b9bde6; }
   .about p { margin: 0; }
   .about .desc { color: var(--fg-2); font-size: var(--name-fs); }
-  .pillars { display: flex; flex-wrap: wrap; justify-content: center; margin: var(--sp-3) 0 0; padding: 0; list-style: none; color: var(--fg); font-size: var(--fs); font-weight: 500; }
-  .pillars li + li::before { content: "·"; margin: 0 var(--sp-2); color: var(--fg-3); }
-  .about .fine { margin-top: var(--sp-4); color: var(--fg-3); font-size: var(--sub-fs); }
-  .about .fine a { color: var(--accent); }
-  .about .fine a:hover { text-decoration: underline; text-underline-offset: 2px; }
 
   .group + .group { margin-top: var(--sp-6); }
-  .two + .group { margin-top: var(--sp-7); }
   .group .t-section { margin: 0 0 var(--sp-2); }
   .prose { padding: var(--sp-4) var(--sp-5); }
   .prose p { max-width: 68ch; margin: 0 0 var(--sp-3); color: var(--fg-2); font-size: var(--name-fs); line-height: 1.65; }
   .prose p:first-child { color: var(--fg); }
   .prose p:last-child { margin-bottom: 0; }
-  .rows .row { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-3) var(--sp-4); }
-  .rows .row + .row { border-top: 0.5px solid var(--border); }
-  .rows .row > div { flex: 1; min-width: 0; }
-  .rows p { margin: 0; }
-  .rows .name { font-size: var(--name-fs); font-weight: 500; }
-  .rows .hint { margin-top: 2px; color: var(--fg-3); font-size: var(--sub-fs); }
+  .doc { padding: var(--sp-2) var(--sp-6); }
+  .doc section { margin: 0; padding: var(--sp-5) 0; border-bottom: 0.5px solid var(--border); }
+  .doc h2 { margin: 0 0 var(--sp-2); color: var(--fg); font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+  .doc :is(p, ul) { max-width: 68ch; margin: 0 0 var(--sp-3); color: var(--fg-2); font-size: var(--name-fs); line-height: 1.65; }
+  .doc :is(p, ul):last-child { margin-bottom: 0; }
+  .doc ul { padding-left: 1.2em; }
+  .doc li + li { margin-top: var(--sp-1); }
+  .doc li::marker { color: var(--fg-3); }
+  .doc .updated { margin: 0; padding: var(--sp-4) 0; color: var(--fg-3); font-size: var(--sub-fs); }
   .btn { flex: none; display: inline-flex; align-items: center; height: var(--ctl-h); padding: 0 var(--sp-3); border-radius: var(--r-2); color: var(--fg); font-size: var(--fs); font-weight: 500; }
   .btn:active { transform: translateY(1px) scale(0.97); }
 
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); }
-  .two .t-section { margin: 0 0 var(--sp-2); }
-  .two section { margin: 0; }
   dl.card { display: grid; grid-template-columns: auto 1fr; padding: 0 var(--sp-4); }
   dt, dd { margin: 0; padding: var(--sp-3) 0; font-size: var(--fs); }
   dt:not(:first-of-type), dt:not(:first-of-type) + dd { border-top: 0.5px solid var(--border); }
@@ -598,8 +644,11 @@
   dd { padding-left: var(--sp-4); color: var(--fg-3); text-align: right; }
 
   @container (max-width: 480px) {
+    .doc { padding-inline: var(--sp-4); }
     .hero .get { align-self: stretch; }
-    .get .main { align-self: stretch; justify-content: center; }
+    .get .main { align-self: stretch; }
+    .get .main { justify-content: center; padding-inline: var(--sp-4); }
+    .get .main b { font-size: 15px; }
     .note { text-align: left; }
   }
 
@@ -615,6 +664,5 @@
     .cmp td { padding-top: var(--sp-2); }
     .cmp td::before { content: attr(data-app); display: block; margin-bottom: 2px; color: var(--fg-3); font-size: var(--meta-fs); font-weight: 600; }
     .feats li { gap: var(--sp-3); }
-    .two { grid-template-columns: 1fr; }
   }
 </style>
