@@ -49,6 +49,7 @@
     setShowRecent,
     kbd = "",
     site = [],
+    legal = [],
   }: {
     lib: Lib | null;
     error: string;
@@ -92,6 +93,8 @@
     kbd?: string;
     /** The website's own pages (Lowkey's demo): a labelled section of icon rows under Quick access. */
     site?: Row[];
+    /** The Privacy policy and Terms: a section of their own under the site's. */
+    legal?: Row[];
   } = $props();
 
   type Filter = "playlists" | "albums" | "artists";
@@ -153,10 +156,12 @@
   // search narrow it as any section.
   const order = $derived(drag ? drag.order : pins);
   const pinned = $derived(order.map((u) => rows.find((r) => r.uri === u)).filter((r): r is Row => !!r));
+  const matches = (r: Row) => !query.trim() || r.name.toLocaleLowerCase(L.locale).includes(query.trim().toLocaleLowerCase(L.locale));
   const sections = $derived(
     [
       { f: "quick", label: L.library.quick, rows: quick },
-      { f: "site", label: "Lowkey", rows: site.filter((r) => !query.trim() || r.name.toLocaleLowerCase(L.locale).includes(query.trim().toLocaleLowerCase(L.locale))) },
+      { f: "site", label: "Lowkey", rows: site.filter(matches) },
+      { f: "legal", label: "Legal", rows: legal.filter(matches) },
       { f: "pinned", label: L.library.pinned, rows: pinned },
       ...filters.map(([f, label]) => ({ f: f as string, label, rows: sorted.filter((r) => r.kind === f && !order.includes(r.uri)) })),
     ].filter((s) => s.rows.length),
@@ -345,7 +350,7 @@
     {#if lib}
       <div class="list" bind:this={listEl} in:enter={{ y: 4 }} out:exit>
         {#each sections as sec (sec.f)}
-          <section aria-label={sec.label} class:quick={sec.f === "quick" || sec.f === "site"} class:site={sec.f === "site"}>
+          <section aria-label={sec.label} class:quick={sec.f === "quick" || sec.f === "site" || sec.f === "legal"} class:site={sec.f === "site" || sec.f === "legal"}>
             <!-- Quick access (Home, Liked songs, Recently played) stands free at the top, without a label. -->
             {#if sec.f !== "quick"}<h3 class="t-label" data-k="h:{sec.f}">{sec.label}</h3>{/if}
             <ul>
