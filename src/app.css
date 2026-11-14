@@ -1,20 +1,77 @@
-/* The site on top of the app's tokens (lib/app-tokens.css): a page is read and selected, the app window isn't. */
-html { scroll-behavior: smooth; scroll-padding-top: 72px; }
-body {
-  background: var(--bg);
-  font-size: 16px;
-  line-height: 1.55;
-  user-select: auto;
-  -webkit-user-select: auto;
-  cursor: auto;
-}
-a { color: inherit; text-decoration: none; }
-button { cursor: pointer; }
+/* Lowkey's own design system (the app's AGENTS.md "Design"): neutral greys, hairlines, one accent, flat.
+   The values are the app's tokens, so the site and the window read as one thing. */
 :root {
-  /* Site type: the app's four sizes, scaled up for a page (a display, a section title, a lead, body). */
-  --d-1: clamp(48px, 9vw, 104px);
-  --d-2: clamp(34px, 5vw, 56px);
-  --lead: clamp(17px, 1.6vw, 20px);
-  --wrap: 1180px;
+  --bg: #f4f4f5;
+  --panel: #fff;
+  --fg: #111113;
+  --fg-2: #52525b;
+  --fg-3: #6b6b73;
+  --border: #e7e7ea;
+  --border-strong: #d4d4d8;
+  --hover: color-mix(in srgb, var(--fg) 5%, transparent);
+  --active: color-mix(in srgb, var(--fg) 7%, transparent);
+  --accent-base: #9b5de5;
+  --accent: var(--accent-base);
+  --on-accent: #fff;
+  --shadow: 0 8px 24px -8px rgb(0 0 0 / 0.16);
+  --raised: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff), var(--accent) 58%, color-mix(in srgb, var(--accent) 90%, #000));
+  --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.14), 0 0 0 0.5px color-mix(in srgb, var(--accent) 70%, #000), 0 1px 2px rgb(0 0 0 / 0.14), 0 4px 10px -4px rgb(0 0 0 / 0.28);
+  --raised-n: linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--fg) 5%, var(--panel)));
+  --raised-n-edge: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 0.5px var(--border-strong), 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 10px -4px rgb(0 0 0 / 0.16);
+  --r-1: 4px;
+  --r-2: 6px;
+  --r-3: 10px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --frame: clamp(4px, 0.8vw, 10px);
+  --gut: clamp(20px, 4vw, 56px);
+  --page: 1040px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
 }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+:root.dark {
+  --bg: #0b0b0c;
+  --panel: #141416;
+  --fg: #ededef;
+  --fg-2: #a1a1aa;
+  --fg-3: #82828c;
+  --border: #232327;
+  --border-strong: #323238;
+  --on-accent: var(--panel);
+  --shadow: 0 8px 24px -8px rgb(0 0 0 / 0.6);
+  --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.24), inset 0 -1px 0 rgb(0 0 0 / 0.3), 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.5), 0 4px 10px -4px rgb(0 0 0 / 0.75);
+  --raised-n: linear-gradient(180deg, color-mix(in srgb, var(--fg) 12%, var(--panel)), color-mix(in srgb, var(--fg) 6%, var(--panel)));
+  --raised-n-edge: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 0.5px rgb(0 0 0 / 0.6), 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 10px -4px rgb(0 0 0 / 0.65);
+  color-scheme: dark;
+}
+/* As in the app: the accent's OKLCH lightness mirrored for the dark panel, hue and chroma kept. */
+@supports (color: oklch(from red l c h)) {
+  :root.dark { --accent: oklch(from var(--accent-base) clamp(0.62, calc(1.18 - l), 0.8) c h); }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.55 var(--font); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+a { color: inherit; text-decoration: none; }
+/* A desktop app, not a document: nothing selects or drags but what you type into. */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+img, a { -webkit-user-drag: none; }
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+
+/* The app's wordmark: "low" in --fg, "key" in --fg-3. */
+.wordmark { letter-spacing: -0.02em; }
+.wordmark > span { color: var(--fg-3); }
+
+/* Lowkey's glide (Glide.svelte): long text never ends in "…", it travels so all of it is readable. */
+.glide { display: block; overflow: hidden; white-space: nowrap; }
+.glide > span { display: inline-block; }
+.glide.over { mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent); }
+.glide.over.auto > span, :is(button, a):hover .glide.over > span { animation: glide var(--t) cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+@keyframes glide { 0%, 18% { transform: none; } 82%, 100% { transform: translateX(var(--o)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .glide.over > span { animation: none !important; }
+  .glide.over { white-space: normal; mask-image: none; }
+}
