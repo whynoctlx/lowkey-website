@@ -1,0 +1,1266 @@
+[
+ {
+  "genre": "pop",
+  "by": "Taylor Swift",
+  "name": "Midnights",
+  "year": 2022,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/5cd9afe3078d7916dcbc566dbb979b97/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/cc2495870fe1a792ad0cdb05501ad5ec/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Lavender Haze",
+    "dur": 202,
+    "explicit": false
+   },
+   {
+    "name": "Maroon",
+    "dur": 218,
+    "explicit": false
+   },
+   {
+    "name": "Anti-Hero",
+    "dur": 200,
+    "explicit": false
+   },
+   {
+    "name": "You're On Your Own, Kid",
+    "dur": 194,
+    "explicit": false
+   },
+   {
+    "name": "Midnight Rain",
+    "dur": 175,
+    "explicit": false
+   },
+   {
+    "name": "Karma",
+    "dur": 204,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "pop",
+  "by": "Dua Lipa",
+  "name": "Future Nostalgia",
+  "year": 2020,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/ddc6b752586a1eb1ab4c6579eae03344/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/877872aaf75694f11d53c318700ab2b5/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Love Again",
+    "dur": 258,
+    "explicit": false
+   },
+   {
+    "name": "Fever",
+    "dur": 156,
+    "explicit": false
+   },
+   {
+    "name": "We're Good",
+    "dur": 165,
+    "explicit": false
+   },
+   {
+    "name": "If It Ain’t Me",
+    "dur": 195,
+    "explicit": false
+   },
+   {
+    "name": "That Kind Of Woman",
+    "dur": 200,
+    "explicit": false
+   },
+   {
+    "name": "Not My Problem (feat. JID)",
+    "dur": 143,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "id": "redzed-junkie",
+  "genre": "rap",
+  "by": "Redzed",
+  "name": "JUNKIE SEX APPEAL",
+  "year": 2021,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/f8790d2a61f22d27de4d2f26bcf931ba/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/454117e99605e763b345d92e3b475cf5/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Blood Spillin' on Concrete (ELIOZIE Remix)",
+    "dur": 148,
+    "explicit": true
+   },
+   {
+    "name": "GTA",
+    "dur": 138,
+    "explicit": true
+   },
+   {
+    "name": "I Need a Rehab",
+    "dur": 132,
+    "explicit": true
+   },
+   {
+    "name": "Heavy",
+    "dur": 162,
+    "explicit": true
+   },
+   {
+    "name": "Chesterfield Hotbox",
+    "dur": 130,
+    "explicit": true
+   },
+   {
+    "name": "Nightmare",
+    "dur": 137,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "pop",
+  "by": "Billie Eilish",
+  "name": "HIT ME HARD AND SOFT",
+  "year": 2024,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/5d284b31cb9ddeb1a0c79aede5a94e1c/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/8eab1a9a644889aabaca1e193e05f984/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "LUNCH",
+    "dur": 180,
+    "explicit": false
+   },
+   {
+    "name": "CHIHIRO",
+    "dur": 303,
+    "explicit": false
+   },
+   {
+    "name": "BIRDS OF A FEATHER",
+    "dur": 210,
+    "explicit": false
+   },
+   {
+    "name": "WILDFLOWER",
+    "dur": 261,
+    "explicit": false
+   },
+   {
+    "name": "L’AMOUR DE MA VIE",
+    "dur": 334,
+    "explicit": false
+   },
+   {
+    "name": "BLUE",
+    "dur": 343,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Redzed",
+  "name": "Bohemian Psycho",
+  "year": 2019,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/454117e99605e763b345d92e3b475cf5/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/454117e99605e763b345d92e3b475cf5/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Rave in the Grave",
+    "dur": 145,
+    "explicit": true
+   },
+   {
+    "name": "Straight Outta Flames",
+    "dur": 125,
+    "explicit": true
+   },
+   {
+    "name": "Ghoul",
+    "dur": 151,
+    "explicit": true
+   },
+   {
+    "name": "Dead Bodies Everywhere",
+    "dur": 118,
+    "explicit": true
+   },
+   {
+    "name": "Sippin' Blood",
+    "dur": 114,
+    "explicit": true
+   },
+   {
+    "name": "Blind",
+    "dur": 174,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Gzuz",
+  "name": "Wolke 7",
+  "year": 2020,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/6db5c024f2661a9f761d4a1f99a30178/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/27b841be1e7ae7e0b43c6270611c3bfc/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "¿ Warum ?",
+    "dur": 192,
+    "explicit": true
+   },
+   {
+    "name": "Drück Drück",
+    "dur": 219,
+    "explicit": true
+   },
+   {
+    "name": "Was erlebt",
+    "dur": 218,
+    "explicit": true
+   },
+   {
+    "name": "Wolke 7",
+    "dur": 192,
+    "explicit": true
+   },
+   {
+    "name": "Über Nacht",
+    "dur": 234,
+    "explicit": true
+   },
+   {
+    "name": "Nur mit den Echten",
+    "dur": 196,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "187 Strassenbande",
+  "name": "Sampler 4",
+  "year": 2017,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/e35d110339f98182a9f30f14361436bc/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/bc051f4ce6e05ea55327417c7564e657/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Millionär",
+    "dur": 160,
+    "explicit": true
+   },
+   {
+    "name": "Mit den Jungz",
+    "dur": 233,
+    "explicit": true
+   },
+   {
+    "name": "High Life",
+    "dur": 241,
+    "explicit": true
+   },
+   {
+    "name": "Lächeln",
+    "dur": 199,
+    "explicit": true
+   },
+   {
+    "name": "Sitzheizung",
+    "dur": 198,
+    "explicit": true
+   },
+   {
+    "name": "100er Batzen",
+    "dur": 212,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "pop",
+  "by": "Ariana Grande",
+  "name": "eternal sunshine",
+  "year": 2024,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/9349b2fcb4bd060060a33f054a619e83/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/721d8fab84b315502de422b8d0901509/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "intro (end of the world)",
+    "dur": 94,
+    "explicit": true
+   },
+   {
+    "name": "bye",
+    "dur": 165,
+    "explicit": false
+   },
+   {
+    "name": "eternal sunshine",
+    "dur": 213,
+    "explicit": false
+   },
+   {
+    "name": "supernatural",
+    "dur": 163,
+    "explicit": false
+   },
+   {
+    "name": "the boy is mine",
+    "dur": 174,
+    "explicit": true
+   },
+   {
+    "name": "we can't be friends (wait for your love)",
+    "dur": 230,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "pop",
+  "by": "Chappell Roan",
+  "name": "The Rise and Fall of a Midwest Princess",
+  "year": 2023,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/71486ce8b24f612c4887efa0f79a9f66/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/14ca3aea25950189f30efe0fa79ac4f9/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Femininomenon",
+    "dur": 220,
+    "explicit": true
+   },
+   {
+    "name": "Red Wine Supernova",
+    "dur": 193,
+    "explicit": true
+   },
+   {
+    "name": "Casual",
+    "dur": 232,
+    "explicit": true
+   },
+   {
+    "name": "HOT TO GO!",
+    "dur": 184,
+    "explicit": false
+   },
+   {
+    "name": "Picture You",
+    "dur": 187,
+    "explicit": false
+   },
+   {
+    "name": "Pink Pony Club",
+    "dur": 258,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Bonez MC",
+  "name": "Hollywood",
+  "year": 2020,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/96b0b2b769369357f13e62a21572a5e2/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/1488a87ba7fcd65d2646f2dff1b511cf/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Papa ist in Hollywood",
+    "dur": 154,
+    "explicit": false
+   },
+   {
+    "name": "187 Gang",
+    "dur": 322,
+    "explicit": false
+   },
+   {
+    "name": "Ihr Hobby",
+    "dur": 185,
+    "explicit": false
+   },
+   {
+    "name": "Grabstein",
+    "dur": 153,
+    "explicit": false
+   },
+   {
+    "name": "Panik",
+    "dur": 154,
+    "explicit": false
+   },
+   {
+    "name": "Wild Wild West",
+    "dur": 151,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Pendulum",
+  "name": "Immersion",
+  "year": 2010,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/d4487e6e09a59bd14c7890b87f90ad4c/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/9b20940c2564f7b0053f8c80bcc80f47/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Watercolour",
+    "dur": 304,
+    "explicit": false
+   },
+   {
+    "name": "Set Me on Fire",
+    "dur": 302,
+    "explicit": false
+   },
+   {
+    "name": "Crush",
+    "dur": 253,
+    "explicit": false
+   },
+   {
+    "name": "The Island, Pt. I (Dawn)",
+    "dur": 320,
+    "explicit": false
+   },
+   {
+    "name": "Witchcraft",
+    "dur": 252,
+    "explicit": false
+   },
+   {
+    "name": "Self vs Self (feat. In Flames)",
+    "dur": 285,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Chase & Status",
+  "name": "No More Idols",
+  "year": 2011,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/1c6df99de5c29b3179850da74a0f0b59/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/348cebc5204d437cb0329dc399a15c49/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "No Problem",
+    "dur": 249,
+    "explicit": false
+   },
+   {
+    "name": "Fire In Your Eyes",
+    "dur": 253,
+    "explicit": false
+   },
+   {
+    "name": "Let You Go",
+    "dur": 237,
+    "explicit": false
+   },
+   {
+    "name": "Blind Faith",
+    "dur": 233,
+    "explicit": false
+   },
+   {
+    "name": "Time",
+    "dur": 257,
+    "explicit": false
+   },
+   {
+    "name": "End Credits",
+    "dur": 199,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Sub Focus",
+  "name": "Torus",
+  "year": 2013,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/9b4344dcee31252705494dd96f9be4a4/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/3263b04252ef78d63799cc8a5d10655c/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Safe In Sound",
+    "dur": 279,
+    "explicit": false
+   },
+   {
+    "name": "Endorphins",
+    "dur": 235,
+    "explicit": false
+   },
+   {
+    "name": "Out The Blue",
+    "dur": 272,
+    "explicit": false
+   },
+   {
+    "name": "Turn Back Time",
+    "dur": 307,
+    "explicit": false
+   },
+   {
+    "name": "You Make It Better",
+    "dur": 358,
+    "explicit": false
+   },
+   {
+    "name": "Tidal Wave",
+    "dur": 226,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Netsky",
+  "name": "2",
+  "year": 2012,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/54e2aa3a3726404ce80c5f37b0f24c2a/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/9700d62fae221d1415727f096f788d9f/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Love Has Gone",
+    "dur": 251,
+    "explicit": false
+   },
+   {
+    "name": "The Whistle Song",
+    "dur": 279,
+    "explicit": false
+   },
+   {
+    "name": "Wanna Die For You",
+    "dur": 257,
+    "explicit": false
+   },
+   {
+    "name": "Puppy",
+    "dur": 260,
+    "explicit": false
+   },
+   {
+    "name": "Detonate",
+    "dur": 230,
+    "explicit": false
+   },
+   {
+    "name": "Dubplate Special",
+    "dur": 48,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Rudimental",
+  "name": "Home",
+  "year": 2013,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/d5dbea837a03edb5dc3dabc47c03dbf1/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/1d99dededaf5eb7413c3bd2f07db3706/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Feel the Love (feat. John Newman)",
+    "dur": 245,
+    "explicit": false
+   },
+   {
+    "name": "Right Here (feat. Foxes)",
+    "dur": 336,
+    "explicit": false
+   },
+   {
+    "name": "Spoons (feat. MNEK & Syron)",
+    "dur": 322,
+    "explicit": false
+   },
+   {
+    "name": "Powerless (feat. Becky Hill)",
+    "dur": 235,
+    "explicit": false
+   },
+   {
+    "name": "Not Giving In (feat. John Newman & Alex Clare)",
+    "dur": 239,
+    "explicit": false
+   },
+   {
+    "name": "Free (feat. Emeli Sandé)",
+    "dur": 216,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Dimension",
+  "name": "Organ",
+  "year": 2021,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/b134f7d77eaf6bf300a43913c581345c/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/0eb67a27fb167abf995a353e4cce4ce3/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Saviour (feat. Sharlene Hector)",
+    "dur": 202,
+    "explicit": false
+   },
+   {
+    "name": "Danger (feat. MC GQ)",
+    "dur": 182,
+    "explicit": false
+   },
+   {
+    "name": "Devotion (feat. Cameron Hayes)",
+    "dur": 190,
+    "explicit": false
+   },
+   {
+    "name": "UK Border Patrol",
+    "dur": 265,
+    "explicit": false
+   },
+   {
+    "name": "Offender",
+    "dur": 223,
+    "explicit": false
+   },
+   {
+    "name": "Sensory Division",
+    "dur": 297,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Wilkinson",
+  "name": "Lazers Not Included",
+  "year": 2013,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/767c2800fff98e6a8e533b815ee5dc87/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/1a564a80205eda60b5a2d5116d7d4aae/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Need To Know",
+    "dur": 266,
+    "explicit": false
+   },
+   {
+    "name": "Heartbeat",
+    "dur": 219,
+    "explicit": false
+   },
+   {
+    "name": "Afterglow",
+    "dur": 225,
+    "explicit": false
+   },
+   {
+    "name": "Take You Higher",
+    "dur": 287,
+    "explicit": false
+   },
+   {
+    "name": "Too Close",
+    "dur": 217,
+    "explicit": false
+   },
+   {
+    "name": "Half Light",
+    "dur": 279,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "dnb",
+  "by": "Camo & Krooked",
+  "name": "Mosaik",
+  "year": 2017,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/2a293afd0ea095c17014a9a9c42ce0e4/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/473c017d85b0fc03cb5f77eb0b935586/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Ember",
+    "dur": 317,
+    "explicit": false
+   },
+   {
+    "name": "If I Could",
+    "dur": 231,
+    "explicit": false
+   },
+   {
+    "name": "Good Times Bad Times",
+    "dur": 232,
+    "explicit": false
+   },
+   {
+    "name": "Tagtraum",
+    "dur": 275,
+    "explicit": false
+   },
+   {
+    "name": "Dissolve Me",
+    "dur": 209,
+    "explicit": false
+   },
+   {
+    "name": "Black Or White",
+    "dur": 285,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Kendrick Lamar",
+  "name": "DAMN.",
+  "year": 2017,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/7ce6b8452fae425557067db6e6a1cad5/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/be0a7c550567f4af0ed202d7235b74d6/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "DNA.",
+    "dur": 185,
+    "explicit": true
+   },
+   {
+    "name": "LOYALTY.",
+    "dur": 227,
+    "explicit": true
+   },
+   {
+    "name": "PRIDE.",
+    "dur": 275,
+    "explicit": true
+   },
+   {
+    "name": "HUMBLE.",
+    "dur": 177,
+    "explicit": true
+   },
+   {
+    "name": "LOVE.",
+    "dur": 213,
+    "explicit": false
+   },
+   {
+    "name": "DUCKWORTH.",
+    "dur": 248,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Drake",
+  "name": "Take Care",
+  "year": 2012,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/6e7a6c8f36669dcd11abe7e7c3222e91/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/eb0ed5b21d1ea5af021fc074ded0e91f/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Over My Dead Body",
+    "dur": 273,
+    "explicit": true
+   },
+   {
+    "name": "Headlines",
+    "dur": 236,
+    "explicit": true
+   },
+   {
+    "name": "Take Care",
+    "dur": 277,
+    "explicit": true
+   },
+   {
+    "name": "Marvins Room",
+    "dur": 347,
+    "explicit": true
+   },
+   {
+    "name": "Doing It Wrong",
+    "dur": 265,
+    "explicit": true
+   },
+   {
+    "name": "Practice",
+    "dur": 238,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Travis Scott",
+  "name": "ASTROWORLD",
+  "year": 2018,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/0b08015216f975dc7fb5be3d5dcc4d88/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/8d8316146026d7e6ce377e314536df62/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "STARGAZING",
+    "dur": 270,
+    "explicit": true
+   },
+   {
+    "name": "SICKO MODE",
+    "dur": 312,
+    "explicit": true
+   },
+   {
+    "name": "SKELETONS",
+    "dur": 145,
+    "explicit": true
+   },
+   {
+    "name": "ASTROTHUNDER",
+    "dur": 143,
+    "explicit": true
+   },
+   {
+    "name": "CAN'T SAY",
+    "dur": 198,
+    "explicit": true
+   },
+   {
+    "name": "BUTTERFLY EFFECT",
+    "dur": 190,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "J. Cole",
+  "name": "2014 Forest Hills Drive",
+  "year": 2014,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/f45c8916970597d390313833a9db0c61/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/dc8d97f19855c8ea3f15ee6db784198e/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "January 28th",
+    "dur": 242,
+    "explicit": true
+   },
+   {
+    "name": "Wet Dreamz",
+    "dur": 239,
+    "explicit": true
+   },
+   {
+    "name": "G.O.M.D",
+    "dur": 301,
+    "explicit": true
+   },
+   {
+    "name": "No Role Modelz",
+    "dur": 292,
+    "explicit": true
+   },
+   {
+    "name": "Apparently",
+    "dur": 293,
+    "explicit": true
+   },
+   {
+    "name": "Love Yourz",
+    "dur": 211,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "id": "redzed-noise",
+  "genre": "rap",
+  "by": "Redzed",
+  "name": "NOISE AT A FUNERAL",
+  "year": 2022,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/b151381c54de5341bd26e39485ee0eb5/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/454117e99605e763b345d92e3b475cf5/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "NOISE AT A FUNERAL",
+    "dur": 113,
+    "explicit": true
+   },
+   {
+    "name": "BARS FROM THE CASKET",
+    "dur": 151,
+    "explicit": true
+   },
+   {
+    "name": "BLACK MASS SUPERVISION",
+    "dur": 152,
+    "explicit": true
+   },
+   {
+    "name": "PSYCHOSOMATIC",
+    "dur": 159,
+    "explicit": true
+   },
+   {
+    "name": "NO MORE TEARS IN HEAVEN",
+    "dur": 179,
+    "explicit": true
+   },
+   {
+    "name": "UNDERTAKER",
+    "dur": 121,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Eminem",
+  "name": "The Marshall Mathers LP",
+  "year": 2000,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/941c2d3c366affdc662956559e078a4e/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/0f30bbd33a680030054af004d698d6ac/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Stan",
+    "dur": 403,
+    "explicit": true
+   },
+   {
+    "name": "The Real Slim Shady",
+    "dur": 284,
+    "explicit": true
+   },
+   {
+    "name": "I'm Back",
+    "dur": 310,
+    "explicit": true
+   },
+   {
+    "name": "Marshall Mathers",
+    "dur": 320,
+    "explicit": true
+   },
+   {
+    "name": "Drug Ballad",
+    "dur": 300,
+    "explicit": true
+   },
+   {
+    "name": "Under The Influence",
+    "dur": 321,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Central Cee",
+  "name": "23",
+  "year": 2022,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/eeb9606e37d01fad4c38c4769c9c37e3/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/25fe719f51af3ee2de27aa267e2a6ac9/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Khabib",
+    "dur": 201,
+    "explicit": true
+   },
+   {
+    "name": "Straight Back to It",
+    "dur": 196,
+    "explicit": true
+   },
+   {
+    "name": "Ungrateful",
+    "dur": 173,
+    "explicit": true
+   },
+   {
+    "name": "Eurovision (feat. Rondodasosa, Baby Gang, A2 Anti, Morad, Beny Jr, Ashe 22 & Freeze corleone)",
+    "dur": 243,
+    "explicit": true
+   },
+   {
+    "name": "Mrs",
+    "dur": 148,
+    "explicit": true
+   },
+   {
+    "name": "Obsessed With You",
+    "dur": 108,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Dave",
+  "name": "PSYCHODRAMA",
+  "year": 2019,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/ad058398e5f4643b846532fe27cfd2f1/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/eb2c8952b7328fdf32b3546d5ffab8c2/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Psycho",
+    "dur": 248,
+    "explicit": true
+   },
+   {
+    "name": "Streatham",
+    "dur": 205,
+    "explicit": true
+   },
+   {
+    "name": "Location",
+    "dur": 241,
+    "explicit": true
+   },
+   {
+    "name": "Screwface Capital",
+    "dur": 253,
+    "explicit": true
+   },
+   {
+    "name": "Environment",
+    "dur": 202,
+    "explicit": true
+   },
+   {
+    "name": "Lesley",
+    "dur": 667,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Doja Cat",
+  "name": "Planet Her",
+  "year": 2021,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/1e012b5bba83edac911b09ca1ab29e1e/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/9e3a3b8792a04c4578da7b905ffeaf2b/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Woman",
+    "dur": 172,
+    "explicit": true
+   },
+   {
+    "name": "Get Into It (Yuh)",
+    "dur": 138,
+    "explicit": true
+   },
+   {
+    "name": "Need to Know",
+    "dur": 210,
+    "explicit": true
+   },
+   {
+    "name": "You Right",
+    "dur": 186,
+    "explicit": true
+   },
+   {
+    "name": "Been Like This",
+    "dur": 177,
+    "explicit": true
+   },
+   {
+    "name": "Kiss Me More (feat. SZA)",
+    "dur": 208,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Post Malone",
+  "name": "Hollywood's Bleeding",
+  "year": 2019,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/4642b8e3e0a89f92a6e2bfed13d8f31c/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/a5a8cca44e7eab2db7d44e039bed2574/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Hollywood's Bleeding",
+    "dur": 156,
+    "explicit": false
+   },
+   {
+    "name": "Saint-Tropez",
+    "dur": 150,
+    "explicit": false
+   },
+   {
+    "name": "Circles",
+    "dur": 215,
+    "explicit": false
+   },
+   {
+    "name": "Die For Me",
+    "dur": 245,
+    "explicit": false
+   },
+   {
+    "name": "Take What You Want",
+    "dur": 231,
+    "explicit": false
+   },
+   {
+    "name": "Sunflower",
+    "dur": 158,
+    "explicit": false
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Luca Brassi10x",
+  "name": "BRASSISLAVA",
+  "year": 2026,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/85989d79801d249ddc3bb7d138429c07/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://i.scdn.co/image/ab676161000051741674d397c1ea997c4103da21",
+  "tracks": [
+   {
+    "name": "PUNO PARA PUNO PROBLEMA",
+    "dur": 161,
+    "explicit": true
+   },
+   {
+    "name": "KING IS BACK",
+    "dur": 149,
+    "explicit": true
+   },
+   {
+    "name": "PAMATAM",
+    "dur": 221,
+    "explicit": true
+   },
+   {
+    "name": "SNEZNA VILA",
+    "dur": 134,
+    "explicit": true
+   },
+   {
+    "name": "SEBAVEDOMA",
+    "dur": 161,
+    "explicit": true
+   },
+   {
+    "name": "MAMY PLACU",
+    "dur": 240,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Separ",
+  "name": "MONARCHIA",
+  "year": 2026,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/53c724eb086ffa69b96534de927b4d6f/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/3fa9146c1982c36d23441a8236db5ef1/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Piráti na jachtách",
+    "dur": 131,
+    "explicit": true
+   },
+   {
+    "name": "Aura",
+    "dur": 219,
+    "explicit": true
+   },
+   {
+    "name": "Hovorili mi že",
+    "dur": 163,
+    "explicit": true
+   },
+   {
+    "name": "Celu noc",
+    "dur": 159,
+    "explicit": true
+   },
+   {
+    "name": "Brotha",
+    "dur": 167,
+    "explicit": true
+   },
+   {
+    "name": "Keď si baller",
+    "dur": 141,
+    "explicit": true
+   }
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Pil C",
+  "name": "brat",
+  "year": 2025,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/bd75c48de4c0c04cc2bf040a0158751a/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/53ed616ee56d44738cb4e1dc4e2b80c2/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "dole",
+    "dur": 179,
+    "explicit": true
+   },
+   {
+    "name": "studené srdce",
+    "dur": 236,
+    "explicit": true
+   },
+   {
+    "name": "nikto ako my",
+    "dur": 149,
+    "explicit": true
+   },
+   {
+    "name": "h1p h0p",
+    "dur": 187,
+    "explicit": true
+   },
+   {
+    "name": "medelin",
+    "dur": 184,
+    "explicit": true
+   },
+   {
+    "name": "iba sny",
+    "dur": 226,
+    "explicit": true
+   }
+  ],
+  "with": [
+   "Luca Brassi10x"
+  ]
+ },
+ {
+  "genre": "rap",
+  "by": "Sawsane",
+  "with": [
+   "Separ"
+  ],
+  "single": true,
+  "name": "Kimbo",
+  "year": 2026,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/5a580d2590795622a843d180b44405b6/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/3a3f3428f74a04c8158eaff6bbf252e7/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Kimbo",
+    "dur": 148,
+    "explicit": false
+   }
+  ]
+ }
+]

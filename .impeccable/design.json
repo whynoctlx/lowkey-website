@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T00:00:00Z",
+  "title": "Design System: Lowkey",
+  "extensions": {
+    "colorMeta": {
+      "tint-deep": { "role": "primary", "displayName": "Cover Tint, Deep", "canonical": "hsl(var(--h) 34% 32%)", "dark": "hsl(var(--h) 40% 74%)", "note": "--h is set at runtime from the playing album; frontmatter value is the default hue 212.", "tonalRamp": ["#192533", "#2a3e55", "#3b5778", "#4c709a", "#6f91b8", "#98b1cd", "#c1d0e1", "#eef2f7"] },
+      "board": { "role": "neutral", "displayName": "Matte Board", "canonical": "#e4e6e4", "dark": "#121518", "tonalRamp": ["#252725", "#3e423e", "#575c57", "#6f766f", "#919791", "#b0b5b0", "#d0d2d0", "#f2f3f2"] },
+      "ink": { "role": "neutral", "displayName": "Graphite Ink", "canonical": "#181b1f", "dark": "#e3e5e3", "tonalRamp": ["#21262b", "#373f48", "#4e5865", "#647182", "#8693a2", "#a9b2bc", "#cbd1d7", "#f1f2f4"] },
+      "ink-2": { "role": "neutral", "displayName": "Graphite 2", "canonical": "#3f454c", "dark": "#b6bbbf", "tonalRamp": ["#21262b", "#373f48", "#4e5865", "#647182", "#8693a2", "#a9b2bc", "#cbd1d7", "#f1f2f4"] },
+      "ink-3": { "role": "neutral", "displayName": "Graphite 3", "canonical": "#575d64", "dark": "#959ba0", "tonalRamp": ["#21262b", "#373f48", "#4e5865", "#647182", "#8693a2", "#a9b2bc", "#cbd1d7", "#f1f2f4"] },
+      "rule": { "role": "neutral", "displayName": "Hairline", "canonical": "rgb(24 27 31 / 0.14)", "dark": "rgb(227 229 227 / 0.13)" },
+      "rule-strong": { "role": "neutral", "displayName": "Hairline Strong", "canonical": "rgb(24 27 31 / 0.35)", "dark": "rgb(227 229 227 / 0.35)" },
+      "sea-deep": { "role": "neutral", "displayName": "Graphite Sea", "canonical": "hsl(var(--h) 8% 22%)", "dark": "hsl(var(--h) 8% 8%)", "tonalRamp": ["#232629", "#3b3f45", "#525960", "#6a727c", "#8b939c", "#acb2b9", "#cdd1d5", "#f1f2f3"] },
+      "on-sea": { "role": "neutral", "displayName": "Sea Foam", "canonical": "hsl(var(--h) 14% 84%)", "dark": "hsl(var(--h) 12% 72%)" },
+      "demo-main": { "role": "neutral", "displayName": "Window", "canonical": "#fbfbfa", "dark": "#1b1d20", "note": "Scoped to the live app window (--w-main)." },
+      "demo-fg": { "role": "neutral", "displayName": "Window Text", "canonical": "#1d1f22", "dark": "#ececec", "note": "--w-fg" },
+      "demo-fg-2": { "role": "neutral", "displayName": "Window Text 2", "canonical": "#5a5f66", "dark": "#9da2a8", "note": "--w-fg2" },
+      "demo-accent": { "role": "primary", "displayName": "Window Accent", "canonical": "hsl(var(--h) 38% 40%)", "dark": "hsl(var(--h) 45% 70%)", "note": "--w-accent, scoped to the app window.", "tonalRamp": ["#182535", "#283e58", "#37577b", "#47709e", "#6b91bd", "#95b1d0", "#c0d0e3", "#edf2f7"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The title line, hero and close only." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles." },
+      "pull": { "displayName": "Pull", "purpose": "The single liner-notes pull quote, in the tint." },
+      "title": { "displayName": "Title", "purpose": "Tracklist item titles." },
+      "lead": { "displayName": "Lead", "purpose": "Hero and closing paragraph." },
+      "body": { "displayName": "Body", "purpose": "Default reading copy." },
+      "label": { "displayName": "Label", "purpose": "Uppercase tracked small caps: table headers, list headings, nav (450 / 0.16em), catalogue line (450 / 11px / 0.2em)." },
+      "button": { "displayName": "Button", "purpose": "Uppercase download button labels." },
+      "mark": { "displayName": "Mark", "purpose": "The LOWKEY wordmark." },
+      "demo-ui": { "displayName": "Demo UI", "purpose": "System font inside the live app window only." }
+    },
+    "shadows": [
+      { "name": "demo-window", "value": "0 0 0 0.5px rgb(0 0 0 / 0.22), 0 30px 80px -20px rgb(20 30 40 / 0.45), 0 12px 30px -12px rgb(20 30 40 / 0.3)", "purpose": "The app window lifted out of the sea. Dark: 0 0 0 0.5px rgb(255 255 255 / 0.14), 0 30px 80px -20px rgb(0 0 0 / 0.7)." },
+      { "name": "demo-cover", "value": "0 6px 18px -8px rgb(0 0 0 / 0.35)", "purpose": "Grid covers inside the app window." },
+      { "name": "demo-cover-large", "value": "0 14px 36px -14px rgb(0 0 0 / 0.5)", "purpose": "Album page header cover inside the app window." },
+      { "name": "button-line-outline", "value": "inset 0 0 0 1px color-mix(in srgb, var(--ink) 55%, transparent)", "purpose": "Line button outline (an inset border, not elevation); hover: inset 0 0 0 1px var(--ink)." }
+    ],
+    "motion": [
+      { "name": "ease-out-long", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The house ease: tracklist indent (0.5s), tile glide (620ms), sky canvas fade-in (1.6s), play-button rise (0.3s)." },
+      { "name": "state-color", "value": "0.2s-0.3s", "purpose": "Colour, background and outline changes on links, buttons and track numbers." },
+      { "name": "scroll-recede", "value": "scroll(root) 0-70svh, linear", "purpose": "The one authored scroll moment: the hero title fades, blurs 10px and lifts 8svh as the window rises. Reduced motion: off." },
+      { "name": "glide", "value": "var(--t) ease-in-out infinite alternate, --t = 2.4s + overflow/28", "purpose": "Long text travels instead of truncating. Reduced motion: wraps." },
+      { "name": "resize-settle", "value": "160ms debounce", "purpose": "Demo tiles hold columns during drag and glide once after it stops." },
+      { "name": "sky-follow", "value": "3.5% per frame colour, 4% per frame sun", "purpose": "Sky eases toward the playing cover's hues and the cursor." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "560px" },
+      { "name": "tablet", "value": "860px" },
+      { "name": "demo-compact", "value": "700px (container: win)" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Solid Button",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "Primary download action; ink fill that turns to the cover tint on hover.",
+      "html": "<a class=\"ds-btn ds-btn-solid\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14\"/></svg>Download for macOS</a>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 50px; padding: 0 26px; font: 500 13px/1 var(--font, 'Jost Variable', Jost, system-ui, sans-serif); letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; transition: background 0.25s, color 0.25s, box-shadow 0.25s; } .ds-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; } .ds-btn-solid { color: var(--board, #e4e6e4); background: var(--ink, #181b1f); } .ds-btn-solid:hover { background: var(--tint-deep, #36506d); } .ds-btn:focus-visible { outline: 2px solid var(--tint-deep, #36506d); outline-offset: 3px; }"
+    },
+    {
+      "name": "Line Button",
+      "kind": "button",
+      "refersTo": "button-line",
+      "description": "Secondary download action beside the solid button.",
+      "html": "<a class=\"ds-btn-line\" href=\"#\">Download for Windows</a>",
+      "css": ".ds-btn-line { display: inline-flex; align-items: center; justify-content: center; height: 50px; padding: 0 26px; color: var(--ink, #181b1f); font: 500 13px/1 var(--font, 'Jost Variable', Jost, system-ui, sans-serif); letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink, #181b1f) 55%, transparent); transition: background 0.25s, box-shadow 0.25s; } .ds-btn-line:hover { box-shadow: inset 0 0 0 1px var(--ink, #181b1f); background: color-mix(in srgb, var(--ink, #181b1f) 6%, transparent); } .ds-btn-line:focus-visible { outline: 2px solid var(--tint-deep, #36506d); outline-offset: 3px; }"
+    },
+    {
+      "name": "Label Row",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Wordmark, tracked section links and the small solid Download.",
+      "html": "<header class=\"ds-label\"><a class=\"ds-mark\" href=\"#\">Lowkey</a><nav class=\"ds-nav\"><a href=\"#\">Listen</a><a href=\"#\">Tracklist</a><a href=\"#\">Notes</a><a href=\"#\">Requirements</a></nav><a class=\"ds-btn-sm\" href=\"#\">Download</a></header>",
+      "css": ".ds-label { display: flex; align-items: center; gap: 40px; height: 72px; padding: 0 32px; color: var(--ink, #181b1f); font-family: var(--font, 'Jost Variable', Jost, system-ui, sans-serif); } .ds-label a { color: inherit; text-decoration: none; } .ds-mark { font-size: 13px; font-weight: 500; letter-spacing: 0.42em; text-transform: uppercase; } .ds-nav { display: flex; gap: 32px; margin-left: auto; } .ds-nav a { color: var(--ink-2, #3f454c); font-size: 12px; font-weight: 450; letter-spacing: 0.16em; text-transform: uppercase; transition: color 0.2s; } .ds-nav a:hover { color: var(--ink, #181b1f); } .ds-label .ds-btn-sm { display: inline-flex; align-items: center; height: 36px; padding: 0 18px; color: var(--board, #e4e6e4); background: var(--ink, #181b1f); font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; transition: background 0.25s; } .ds-label .ds-btn-sm:hover { background: var(--tint-deep, #36506d); } .ds-label a:focus-visible { outline: 2px solid var(--tint-deep, #36506d); outline-offset: 3px; }"
+    },
+    {
+      "name": "Tracklist",
+      "kind": "custom",
+      "refersTo": "tracklist",
+      "description": "Numbered feature list in the form of a sleeve track listing, on hairlines.",
+      "html": "<ol class=\"ds-tracks\"><li><span class=\"ds-no\">01</span><h3>Native, not a website in a window</h3><p>System font, native title bar, macOS vibrancy and Windows 11 Mica.</p></li><li><span class=\"ds-no\">02</span><h3>Light</h3><p>Rust and Tauri instead of Electron.</p></li></ol>",
+      "css": ".ds-tracks { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule, rgb(24 27 31 / 0.14)); font-family: var(--font, 'Jost Variable', Jost, system-ui, sans-serif); color: var(--ink, #181b1f); } .ds-tracks li { display: grid; grid-template-columns: 64px minmax(0, 5fr) minmax(0, 7fr); gap: 0 24px; align-items: baseline; padding: 26px 0; border-bottom: 1px solid var(--rule, rgb(24 27 31 / 0.14)); transition: padding 0.5s cubic-bezier(0.16, 1, 0.3, 1); } .ds-tracks li:hover { padding-left: 12px; } .ds-no { color: var(--ink-3, #575d64); font-size: 12px; font-weight: 450; letter-spacing: 0.16em; font-variant-numeric: tabular-nums; transition: color 0.3s; } .ds-tracks li:hover .ds-no { color: var(--tint-deep, #36506d); } .ds-tracks h3 { margin: 0; font-size: 21px; font-weight: 400; letter-spacing: -0.01em; } .ds-tracks p { margin: 0; color: var(--ink-2, #3f454c); font-size: 16px; line-height: 1.6; }"
+    },
+    {
+      "name": "Comparison Table",
+      "kind": "custom",
+      "refersTo": "comparison-table",
+      "description": "Hairline table with the Lowkey column on a 7% tint wash.",
+      "html": "<table class=\"ds-table\"><thead><tr><th></th><th>Spotify</th><th class=\"ds-us\">Lowkey</th><th>Spotatui</th></tr></thead><tbody><tr><th>Resizing</th><td>Stutters</td><td class=\"ds-us\">Smooth, tiles glide into place</td><td>No rearranging</td></tr><tr><th>Price</th><td>Free with ads, or subscription</td><td class=\"ds-us\">Free, forever</td><td>Free, open source</td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; font: 15px/1.55 var(--font, 'Jost Variable', Jost, system-ui, sans-serif); } .ds-table th, .ds-table td { padding: 15px 20px 15px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule, rgb(24 27 31 / 0.14)); } .ds-table thead th { color: var(--ink, #181b1f); font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; border-bottom-color: var(--ink, #181b1f); } .ds-table tbody th { width: 22%; color: var(--ink-3, #575d64); font-weight: 400; } .ds-table td { color: var(--ink-3, #575d64); } .ds-table td.ds-us { color: var(--ink, #181b1f); } .ds-table .ds-us { padding-left: 16px; background: color-mix(in srgb, var(--tint-deep, #36506d) 7%, transparent); } .ds-table thead .ds-us { color: var(--tint-deep, #36506d); }"
+    },
+    {
+      "name": "Spec List",
+      "kind": "custom",
+      "refersTo": "spec-list",
+      "description": "Requirements as a two-column definition list under a tracked heading.",
+      "html": "<div class=\"ds-spec\"><h3>You'll need</h3><dl><dt>Spotify Premium</dt><dd>Your own account</dd><dt>macOS</dt><dd>On Apple Silicon</dd></dl></div>",
+      "css": ".ds-spec { font-family: var(--font, 'Jost Variable', Jost, system-ui, sans-serif); color: var(--ink, #181b1f); } .ds-spec h3 { margin: 0 0 8px; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; } .ds-spec dl { display: grid; grid-template-columns: auto 1fr; margin: 0; border-top: 1px solid var(--ink, #181b1f); } .ds-spec dt, .ds-spec dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--rule, rgb(24 27 31 / 0.14)); font-size: 15px; } .ds-spec dd { color: var(--ink-3, #575d64); text-align: right; padding-left: 16px; }"
+    },
+    {
+      "name": "Legal Footer",
+      "kind": "custom",
+      "refersTo": "legal-footer",
+      "description": "Disclaimer on the graphite sea the closing sky fades into.",
+      "html": "<footer class=\"ds-legal\"><p><b>Lowkey</b> is an unofficial, independent project, not affiliated with Spotify AB.</p></footer>",
+      "css": ".ds-legal { padding: 40px 32px 56px; background: var(--sea-deep, #34383d); color: var(--on-sea, #d0d6dc); font: 12px/1.65 var(--font, 'Jost Variable', Jost, system-ui, sans-serif); } .ds-legal p { max-width: 96ch; margin: 0 0 8px; } .ds-legal b { font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Sky Fallback",
+      "kind": "custom",
+      "refersTo": "sky",
+      "description": "The CSS fallback of the live WebGL horizon (horizon at 30% from the bottom); the shader adds mist, sea streaks, cursor sun and grain.",
+      "html": "<div class=\"ds-sky\" style=\"--h: 212; --h2: 28\"></div>",
+      "css": ".ds-sky { height: 240px; background: linear-gradient(hsl(var(--h2) 8% 90%), hsl(var(--h) 16% 80%) 70%, hsl(var(--h) 14% 66%) 70.2%, hsl(var(--h) 14% 54%)); }"
+    },
+    {
+      "name": "Glide Text",
+      "kind": "custom",
+      "refersTo": "glide",
+      "description": "Long text never ends in an ellipsis; it fades at the edge and travels on hover.",
+      "html": "<button class=\"ds-glide-host\"><span class=\"ds-glide\"><span>The Long Way Home (Through the Valley of Quiet Things)</span></span></button>",
+      "css": ".ds-glide-host { all: unset; display: block; width: 180px; font: 600 13px/1.35 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-glide { display: block; overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent); } .ds-glide > span { display: inline-block; } .ds-glide-host:hover .ds-glide > span, .ds-glide-host:focus-visible .ds-glide > span { animation: ds-glide 10s ease-in-out infinite alternate; } @keyframes ds-glide { 0%, 18% { transform: none; } 82%, 100% { transform: translateX(-210px); } } @media (prefers-reduced-motion: reduce) { .ds-glide { white-space: normal; mask-image: none; } .ds-glide > span { animation: none !important; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Sleeve",
+    "overview": "The site is a record sleeve in the ECM tradition: a vast, muted photographic field, tiny precise label type, and silence as the luxury. The \"photograph\" is not a raster but a live WebGL sea horizon in mist, re-tinted by whichever cover is playing in the demo and stirred by a pale sun that follows the cursor. Everything else is the back of the sleeve: cool matte board, graphite ink, hairline rules, and widely tracked small caps.\n\nDensity is low and the page is long. One light display face carries the voice; colour is almost absent, so the single live tint, taken from the cover that plays, reads as an event. The one place the system speaks another language is the live app window, which is deliberately native (system font, rounded window, macOS lights, vibrancy) because it is a specimen of the product, not part of the sleeve.",
+    "keyCharacteristics": [
+      "Cool matte-board grey ground with graphite ink; never cream, never pure black or white.",
+      "One hue-bound tint (`--h`) that follows the playing cover across sky, accents, selection and focus.",
+      "Jost set light (300) for display, tracked uppercase small caps for every label.",
+      "Square corners, 1px hairline rules, no cards, no UI glow on the sleeve.",
+      "A live, generated sea-and-mist horizon as the only imagery, opening and closing the page."
+    ],
+    "rules": [
+      { "name": "The One Tint Rule", "body": "The only chromatic colour on the sleeve is the hue taken from the cover that plays. No second accent, no fixed brand colour.", "section": "colors" },
+      { "name": "The Graphite Ground Rule", "body": "Surfaces are board or graphite sea. Hue-bound neutrals stay at or below 8% saturation so they never read as tinted panels.", "section": "colors" },
+      { "name": "The Two Registers Rule", "body": "Type is either large and light (300, negative tracking) or small and tracked (11-13px, 0.14em and wider, uppercase). Mid-weight mid-size text is reserved for reading copy.", "section": "typography" },
+      { "name": "The Native Specimen Rule", "body": "The app window uses the system font and its own scale (13px UI, bold 700-800 headings). Jost never enters the window, and system type never leaves it.", "section": "typography" },
+      { "name": "The Hairline Grid Rule", "body": "Rows are separated by 1px rules, never by boxes or backgrounds. A list's top edge is a hairline (or a full-ink rule for spec lists and table headers).", "section": "layout" },
+      { "name": "The Flat Sleeve Rule", "body": "No shadow, glow or blur on sleeve UI. Depth on the sleeve is the sky and its fades; lift is the app window's alone.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do let the playing cover's hue drive every accent through `--h`; set colour once, never per component.",
+      "Do separate content with 1px hairlines in rule; use full ink only for a list's top rule or a table header underline.",
+      "Do set display and headline text in Jost 300 with negative tracking, and every label in 11-13px tracked uppercase.",
+      "Do keep every sleeve edge square (0).",
+      "Do fade any new full-bleed sky section in from board and out into graphite sea.",
+      "Do honour reduced motion: freeze the sky, drop the scroll recede, wrap glide text."
+    ],
+    "donts": [
+      "Don't introduce a second accent colour or a fixed brand blue; the tint is borrowed, not owned.",
+      "Don't use cream or warm paper for the ground; the board is cool grey.",
+      "Don't put cards, panels, rounded corners, shadows or UI glow on the sleeve. The sky's sun and the app window's native radii and shadow are the world's own materials, not licences for sleeve UI.",
+      "Don't truncate text with an ellipsis anywhere; use glide.",
+      "Don't bring system type or the window's tokens onto the sleeve, or Jost into the window.",
+      "Don't add raster imagery; covers are CSS gradients and the photograph is the live sky."
+    ]
+  }
+}

@@ -1,0 +1,517 @@
+/* The app's tokens and global classes (Lowkey src/routes/+page.svelte), scoped to the demo window (.lk). */
+  /* The cover's hue (set from the playing cover in the script) animates between tracks instead of jumping. */
+/* Images (and covers) fade in once loaded: the page marks them .ready on load. Both ways go through the base transition. */
+.lk img { transition: opacity var(--m-5) var(--ease); }
+/* A light ↔ dark flip lands in one frame: elements with colour transitions of their own (hover fills, controls)
+   otherwise faded to the new scheme after the rest had switched. */
+
+.lk img:not(.ready) { opacity: 0; }
+/* A skeleton waits one step before it shows, so a fast load never flashes it; then it fades in and pulses. */
+@keyframes wait { from { opacity: 0; } }
+/* Enter/exit progress from the motion engine, registered so it interpolates (the sheet's backdrop follows it). */
+@property --t { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --now-h { syntax: "<number>"; inherits: true; initial-value: 250; }
+.lk {
+  /* A scroller's right strip, where its scrollbar runs: a mask layer added over its edge fades so the bar never
+     fades with the content (main, the library, Settings). 0 when scrollbars are off. */
+  --bar-w: 16px;
+  --bar-keep: linear-gradient(#000 0 0) right / var(--bar-w) 100% no-repeat;
+  /* Flat neutral greys (AGENTS.md "Design"); the playing cover lights what plays. */
+  --bg: #f4f4f5;
+  --panel: #fff;
+  /* Interaction states, shared by every row, card and ghost button (AGENTS.md "Interaction"). */
+  --hover: color-mix(in srgb, var(--fg) 5%, transparent);
+  --hover-edge: inset 0 0 0 0.5px color-mix(in srgb, var(--fg) 7%, transparent);
+  --press: color-mix(in srgb, var(--fg) 8%, transparent);
+  --active: color-mix(in srgb, var(--fg) 7%, transparent);
+  /* Select and fields: a flat well, a step darker under the pointer. */
+  --ctl: color-mix(in srgb, var(--fg) 6%, transparent);
+  --ctl-hover: color-mix(in srgb, var(--fg) 9%, transparent);
+  --border-0: #e7e7ea;
+  --border-strong-0: #d4d4d8;
+  --fg: #111113;
+  /* Contrast (a setting, 0–60 %): grey text and hairlines move toward --fg; hairlines by half as much. */
+  --fg-2: color-mix(in srgb, var(--fg) var(--contrast, 0%), var(--fg-2-0));
+  --fg-3: color-mix(in srgb, var(--fg) var(--contrast, 0%), var(--fg-3-0));
+  --border: color-mix(in srgb, var(--fg) calc(var(--contrast, 0%) / 2), var(--border-0));
+  --border-strong: color-mix(in srgb, var(--fg) calc(var(--contrast, 0%) / 2), var(--border-strong-0));
+  --fg-2-0: #52525b;
+  --fg-3-0: #6b6b73;
+  /* Light and dark mirror each other (AGENTS.md "Design" 6): --accent-0 is the accent for this mode, --accent its live
+     value (the cover's under html.tinted, greyed in an unfocused window). */
+  --accent-0: var(--accent-base);
+  --accent: var(--accent-0);
+  --on-accent: var(--on-accent-l, #18181b);
+  /* What plays: the cover's hue (html.tinted), the accent until a coloured cover has loaded. */
+  --now: var(--accent);
+  --now-l: 42%;
+  /* The faint wash of the cover on the window; none without a tint. */
+  --wash: transparent;
+  --danger: #d93f3f;
+  /* Only floating layers (dialogs, popovers) cast a shadow. */
+  --shadow: 0 8px 24px -8px rgb(0 0 0 / 0.16);
+  /* Raised (AGENTS.md "Design" 1, the item hero's buttons only): lit from above, a glint on the top edge, a shade at
+     the bottom, a hairline rim and a short soft drop. --raised the accent ones, --raised-n the neutral ones; --sunk
+     a neutral one that is on, pressed in: a neutral well deeper than the ground (an accent tint went muddy on dark),
+     only its glyph or label in --accent. */
+  --raised: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff), var(--accent) 58%, color-mix(in srgb, var(--accent) 90%, #000));
+  --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.14), 0 0 0 0.5px color-mix(in srgb, var(--accent) 70%, #000), 0 1px 2px rgb(0 0 0 / 0.14), 0 4px 10px -4px rgb(0 0 0 / 0.28);
+  --raised-n: linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--fg) 5%, var(--panel)));
+  --raised-n-edge: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 0.5px var(--border-strong), 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 10px -4px rgb(0 0 0 / 0.16);
+  --sunk: color-mix(in srgb, var(--fg) 7%, var(--panel));
+  --sunk-edge: inset 0 1px 3px rgb(0 0 0 / 0.14), 0 0 0 0.5px var(--border-strong);
+  /* The dim behind a modal sheet; stronger in dark so it reads the same (AGENTS.md "Design" 6). */
+  --scrim: rgb(0 0 0 / 0.32);
+  /* The flat veil over a cover photo under the sidebar's --accent play glyph: the panel's tone, so it lightens a cover
+     in light and darkens it in dark (mirrors), and the glyph reads on white and black covers alike. */
+  --on-cover-dim: color-mix(in srgb, var(--panel) 65%, transparent);
+  /* A switch's disc: light in both modes, like the native one (a dark disc read as black on the dark pill). */
+  --knob: #fff;
+  /* The disc of a switch that is on: on the accent pill. A neutral accent (From cover, nothing coloured) is --fg, white in
+     dark like the disc, so there it takes the accent's text colour. */
+  --knob-on: var(--knob);
+  /* The body's scroll fade at the bottom: content fades into the panel. Into white a long fade read as a glowing haze,
+     into the dark panel as a shadow, so light mode fades over less (AGENTS.md "Design" 6). */
+  --fade-end: var(--sp-4);
+  --r-1: 4px;
+  --r-2: 6px;
+  --r-3: 10px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* A gliding line (.marquee) starts and stops slowly: an in-out curve, only there. */
+  --ease-glide: cubic-bezier(0.45, 0, 0.55, 1);
+  /* Motion (AGENTS.md "Motion", engine in motion.svelte.ts): one speed setting, --motion, and every duration a step of it. */
+  /* --motion comes from the root (motion.svelte.ts sets it there). */
+  --m-1: calc(var(--motion) / 3); /* 67: press, hover arriving */
+  --m-2: calc(var(--motion) / 2); /* 100: colour */
+  --m-3: calc(var(--motion) * 2 / 3); /* 133: glyph swap, small moves */
+  --m-4: var(--motion); /* 200: the default */
+  --m-5: calc(var(--motion) * 7 / 6); /* 233: hover leaving, fades */
+  --m-6: calc(var(--motion) * 2); /* 400: a big entrance */
+  --m-7: calc(var(--motion) * 3); /* 600: colour washes */
+  /* macOS type: four sizes in all (11 · 13 · 17 · 26); rank comes from weight and colour. */
+  --fs: 13px;
+  --name-fs: 14px;
+  --sub-fs: 12px;
+  --meta-fs: 11px;
+  --small-fs: 11px;
+  --micro-fs: 11px;
+  --t-page: 26px;
+  --t-section: 17px;
+  /* Spacing scale (4px base). Every gap, padding and margin uses a step; 2px only inside a text stack. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  /* Page gutter: the left/right inset of every main view; 16px in a narrow panel. */
+  --gutter: 32px;
+  --row-h: 36px;
+  --lib-row: 52px;
+  --lib-art: 40px;
+  --track-h: 56px;
+  --thumb: 40px;
+  --ask-w: 400px;
+  --hero-cover: 176px;
+  /* A cover tile's least width; a grid adds a column whenever one more fits. */
+  --tile-min: 150px;
+  --card-min: 184px;
+  --hero-title: 26px;
+  --play-h: 40px;
+  /* The player row and its cover, times --player-k (Settings › Player › Size: 0.8 / 1 / 1.25). */
+  --player-k: 1;
+  --bar-h: calc(84px * var(--player-k));
+  --player-cover: calc(56px * var(--player-k));
+  /* Control height: buttons, fields, segmented controls, menu rows; settings rows. */
+  --ctl-h: 28px;
+  --set-row: 48px;
+  --chrome: var(--bg);
+  --top-h: calc(52px / var(--zoom, 1));
+  color-scheme: light;
+  transition: --now-h var(--m-7) var(--ease);
+}
+/* Dark (html.dark, set by setTheme and app.html before the first paint). */
+html.dark .lk {
+    color-scheme: dark;
+    --bg: #0b0b0c;
+    --panel: #141416;
+    --border-0: #232327;
+    --border-strong-0: #323238;
+    --fg: #ededef;
+    --fg-2-0: #a1a1aa;
+    --fg-3-0: #82828c;
+    /* Mirrored around the grounds: as far above the dark panel as the light accent sits below white. */
+    --now-l: 66%;
+    --danger: #f06565;
+    --shadow: 0 8px 24px -8px rgb(0 0 0 / 0.6);
+    --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.24), inset 0 -1px 0 rgb(0 0 0 / 0.3), 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.5), 0 4px 10px -4px rgb(0 0 0 / 0.75);
+    --raised-n: linear-gradient(180deg, color-mix(in srgb, var(--fg) 12%, var(--panel)), color-mix(in srgb, var(--fg) 6%, var(--panel)));
+    --raised-n-edge: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 0.5px rgb(0 0 0 / 0.6), 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 10px -4px rgb(0 0 0 / 0.65);
+    --sunk: color-mix(in srgb, #000 30%, var(--panel));
+    --sunk-edge: inset 0 1px 3px rgb(0 0 0 / 0.55), 0 0 0 0.5px var(--border-strong);
+    --scrim: rgb(0 0 0 / 0.6);
+    --knob: var(--fg);
+    --fade-end: var(--sp-6);
+}
+/* Dark accent: the chosen colour's OKLCH lightness mirrored (1 − L, shifted to the dark panel), hue and chroma kept;
+   its text the panel colour, as under a tinted accent. Old webviews without relative colour keep the light value. */
+@supports (color: oklch(from red l c h)) {
+  html.dark .lk { --accent-0: oklch(from var(--accent-base) clamp(0.62, calc(1.18 - l), 0.8) c h); --on-accent: var(--panel); }
+}
+/* From cover: the cover's hue is the accent too (buttons, switches, focus), its text the panel colour (white on the darker
+   light-mode tone, dark on the lighter dark-mode one). */
+/* From cover while nothing coloured plays (nothing yet, or a grey cover): neutral, the theme's own text colour,
+   so the accent never falls back to a hue the user didn't pick for this mode. */
+/* Color tint: the glass takes a faint wash of the playing colour (the cover's or the chosen one); off, it stays neutral. */
+.lk { --wash: var(--now); }
+/* Unfocused window, like native apps: the accent and the cover's light grey out, secondary chrome recedes. */
+/* Density is per component (AGENTS.md "Density"): .compact on a component's root swaps these for its subtree. */
+/* Spacious, compact's opposite: larger type, rows and covers for the subtree; spacing stays. */
+:where(.lk) .spacious {
+  --fs: 14px;
+  --name-fs: 15px;
+  --sub-fs: 13px;
+  --row-h: 40px;
+  --lib-row: 60px;
+  --lib-art: 48px;
+  --ctl-h: 32px;
+  --track-h: 64px;
+  --thumb: 48px;
+  --tile-min: 184px;
+  --card-min: 224px;
+}
+:where(.lk) .compact {
+  --fs: 12px;
+  --name-fs: 13px;
+  --sub-fs: 11px;
+  --t-page: 22px;
+  --t-section: 15px;
+  --gutter: 24px;
+  --play-h: 32px;
+  --row-h: 28px;
+  --lib-row: 32px;
+  --lib-art: 24px;
+  --track-h: 40px;
+  --thumb: 28px;
+  --hero-cover: 128px;
+  --tile-min: 112px;
+  --card-min: 140px;
+  --hero-title: 22px;
+  --bar-h: calc(68px * var(--player-k));
+  --player-cover: calc(44px * var(--player-k));
+  --ctl-h: 24px;
+  --set-row: 36px;
+  /* The larger steps tighten too, so sections, headers and shelves sit closer. */
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+}
+.lk {
+  margin: 0;
+  font: var(--fs)/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+  background: var(--chrome);
+  color: var(--fg);
+}
+/* Sidebar and player sit on frosted glass: the native vibrancy under a tint whose strength is a setting. */
+.lk { --chrome: color-mix(in srgb, var(--bg) var(--glass-tint, 65%), transparent); }
+/* Type roles (see AGENTS.md): use these classes for headings instead of local font rules. */
+:where(.lk) .t-page { margin: 0; font-size: var(--t-page); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+:where(.lk) .t-section { margin: 0; font-size: var(--t-section); font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+:where(.lk) .t-group { margin: 0; font-size: var(--fs); font-weight: 600; line-height: 1.3; color: var(--fg); }
+:where(.lk) .t-label { margin: 0; font-size: var(--meta-fs); font-weight: 600; line-height: 1.3; color: var(--fg-3); }
+/* Interaction (see AGENTS.md): one hover surface and one glyph swap for the whole app. Components add the
+   classes; they don't restyle the states locally. Hover arrives in 80 ms and leaves over 280 ms. */
+:where(.lk) .hl { transition: background var(--m-5) var(--ease), box-shadow var(--m-5) var(--ease); }
+:where(.lk) .hl:hover, :where(.lk) .hl:has(:focus-visible) { background: var(--hover); box-shadow: var(--hover-edge); transition-duration: var(--m-1); }
+:where(html:not(.alt-press)) .lk .hl:active { background: var(--press); }
+/* An icon or toolbar button (.ic): the same surface and timing as .hl, and its glyph turns --fg. Components set
+   only geometry and the resting colour; selected/on states sit above it. */
+:where(.lk) .ic { transition: background var(--m-5) var(--ease), box-shadow var(--m-5) var(--ease), color var(--m-5) var(--ease); }
+:where(.lk) .ic:not(:disabled):is(:hover, :focus-visible) { color: var(--fg); background: var(--hover); box-shadow: var(--hover-edge); transition-duration: var(--m-1); }
+:where(html:not(.alt-press)) .lk .ic:not(:disabled):active { background: var(--press); }
+/* Inside a .hl: .swap-out (an index, equaliser) shrinks away as .swap-in (a play glyph) grows in its place. */
+:where(.lk) .hl .swap-out, :where(.lk) .hl .swap-in { transition: opacity var(--m-3) var(--ease), transform var(--m-3) var(--ease), color var(--m-2) var(--ease); }
+:where(.lk) .hl .swap-in { opacity: 0; transform: scale(0.6); }
+:where(.lk) .hl:is(:hover, :has(:focus-visible)) .swap-out { opacity: 0; transform: scale(0.6); }
+:where(.lk) .hl:is(:hover, :has(:focus-visible)) .swap-in { opacity: 1; transform: none; }
+/* The playing track row (.hl.now): an accent tint with its own hover step and an accent name. */
+:where(.lk) .hl.now { background: color-mix(in srgb, var(--now) 10%, transparent); }
+:where(.lk) .hl.now:is(:hover, :has(:focus-visible)) {
+  background: color-mix(in srgb, var(--now) 14%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--now) 20%, transparent);
+}
+:where(.lk) .hl.now .name { color: var(--now); font-weight: 600; }
+/* A big cover tile (.hl.bare): at rest no fill or edge, the cover is the surface. Pointed at, the whole tile takes the
+   .hl surface and rises 2px (`translate`, so it never fights the grid's FLIP `transform`), easing back down when
+   the pointer leaves, while the art leans in (a slow 4% zoom inside its own clip). Pressed, it settles back down and gives a touch (scale), quick.
+   Its description steps up to --fg-2 while pointed at. The playing tile keeps its art sharp and no tint: the --now
+   name and the play disc with the equaliser on it carry it; pointed at, only the glyph turns into the pause. */
+:where(.lk) .hl.bare, :where(.lk) .hl.bare.now { background: none; box-shadow: none; }
+:where(.lk) .hl.bare { transition: background var(--m-5) var(--ease), box-shadow var(--m-5) var(--ease), translate var(--m-6) var(--ease), scale var(--m-5) var(--ease); }
+:where(.lk) .hl.bare:is(:hover, :has(:focus-visible)) {
+  background: var(--hover); box-shadow: var(--hover-edge); translate: 0 calc(-0.5 * var(--sp-1));
+  transition: background var(--m-1) var(--ease), box-shadow var(--m-1) var(--ease), translate var(--m-4) var(--ease), scale var(--m-3) var(--ease);
+}
+:where(html:not(.alt-press)) .lk .hl.bare:active:not(:has(.cover-play:active)) { background: var(--press); translate: 0 0; scale: 0.99; transition-duration: var(--m-1); }
+:where(.lk) .hl.bare .desc { transition: color var(--m-5) var(--ease); }
+:where(.lk) .hl.bare:is(:hover, :has(:focus-visible)) .desc { color: var(--fg-2); transition-duration: var(--m-2); }
+:where(.lk) .hl.bare .veil { overflow: clip; }
+:where(.lk) .hl.bare .veil::after { display: none; }
+:where(.lk) .hl.bare .veil > img {
+  transition: transform var(--m-6) var(--ease);
+  /* A hairline over the art, so white covers keep their edge on a light panel. */
+  outline: 0.5px solid color-mix(in srgb, var(--fg) 10%, transparent); outline-offset: -0.5px;
+}
+:where(.lk) .hl.bare:is(:hover, :has(:focus-visible)) .veil > img { transform: scale(1.04); transition-duration: var(--m-7); }
+/* The corner disc: the raised accent play disc (clickable, AGENTS.md "Design" 1, 2) in the cover's bottom-right corner; on
+   a playing tile the same disc stays put with the equaliser on it, and pointed at, the bars give way to the pause. The play rises in with the tile (from a step lower and 0.85) and leaves faster than
+   it came; under the pointer it swells a little, pressed it dips. Round (artist) covers move it in along the diagonal (--disc-at). */
+:where(.lk) .hl.bare .veil > :is(button.cover-play, .eq) { position: absolute; inset: auto var(--disc-at, var(--sp-2)) var(--disc-at, var(--sp-2)) auto; margin: 0; }
+:where(.lk) .hl.bare .veil > .eq {
+  z-index: 2; width: var(--disc); height: var(--disc); padding-block: calc(var(--disc) * 0.33); border-radius: 50%;
+  box-sizing: border-box; justify-content: center; color: var(--on-accent); pointer-events: none;
+}
+:where(.lk) .hl.bare.now .veil > button.cover-play { opacity: 1; transform: none; }
+:where(.lk) .hl.bare.now .veil > button.cover-play svg { opacity: 0; transform: scale(0.6); transition: opacity var(--m-3) var(--ease), transform var(--m-3) var(--ease); }
+:where(.lk) .hl.bare.now:is(:hover, :has(:focus-visible)) .veil > button.cover-play svg { opacity: 1; transform: none; }
+:where(.lk) .hl.bare .veil > button.cover-play {
+  opacity: 0; transform: translateY(var(--sp-1)) scale(0.85);
+  transition: opacity var(--m-3) var(--ease), transform var(--m-3) var(--ease), scale var(--m-3) var(--ease);
+}
+:where(.lk) .hl.bare:is(:hover, :has(:focus-visible)) .veil > button.cover-play {
+  opacity: 1; transform: none;
+  transition: opacity var(--m-3) var(--ease), transform var(--m-5) var(--ease), scale var(--m-3) var(--ease);
+}
+:where(.lk) .hl.bare .veil > button.cover-play:hover { scale: 1.08; }
+:where(html:not(.alt-press)) .lk .hl.bare .veil > button.cover-play:active { scale: 0.94; transition-duration: var(--m-1); }
+:where(.lk) .hl.bare .veil > button.cover-play svg { width: calc(var(--disc) * 0.4); height: calc(var(--disc) * 0.4); }
+/* A keyboard shortcut (.kbd): quiet --fg-3 keys, no box, the size of the explicit mark's type. */
+:where(.lk) .kbd { flex: none; display: inline-flex; align-items: center; height: 18px; padding: 0 var(--sp-1); border-radius: var(--r-1); color: var(--fg-3); font: inherit; font-size: var(--micro-fs); font-weight: 500; line-height: 1; letter-spacing: 0.02em; white-space: nowrap; pointer-events: none; }
+/* Explicit mark: a small "E" on a flat --fg tint (track rows, player); a fill, not a hairline, so it reads on glass too. */
+/* The name, said as it reads: "low" in --fg, "key" in --fg-3 (sidebar, About). */
+:where(.lk) .wordmark { letter-spacing: -0.02em; }
+:where(.lk) .wordmark > span { color: var(--fg-3); }
+:where(.lk) .explicit { flex: none; align-self: center; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: var(--r-1); background: color-mix(in srgb, var(--fg) 16%, transparent); color: var(--fg-2); font-size: var(--micro-fs); font-weight: 700; line-height: 1; letter-spacing: 0; }
+/* A grid of cover tiles (Tile.svelte). Responsive (AGENTS.md "Design" 7): every item shows, in as many --tile-min
+   columns as fit (tiles.ts), each row from the left edge to the right: the room left over first widens the gap
+   (--gap-x, up to --sp-5), then the tiles (--tile). A new count waits until a resize stops; until then a narrowing grid
+   is clipped and fades out at its right edge (data-squeezed), then its tiles glide to their places once.
+   Tiles pull back by their own --sp-2 inset. */
+:where(.lk) .tiles { display: grid; grid-template-columns: repeat(var(--cols, auto-fill), var(--tile, var(--tile-min))); position: relative; gap: var(--sp-3) var(--gap-x, var(--sp-2)); align-items: start; margin: 0 calc(-1 * var(--sp-2)); padding: 0; list-style: none; overflow-x: clip; }
+:where(.lk) .tiles[data-squeezed] { mask-image: linear-gradient(to left, transparent, #000 var(--sp-6)); }
+/* A row cover (.veil): the art stays sharp. On hover its play is a small accent disc (the shelf card play in small) and the playing row
+   keeps a panel veil under the accent equaliser, steady, so nothing flashes while the pointer moves over rows. */
+:where(.lk) .veil { position: relative; }
+:where(.lk) .veil::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: color-mix(in srgb, var(--panel) 72%, transparent); opacity: 0; transition: opacity var(--m-4) var(--ease); }
+:where(.lk) .hl.now .veil::after { opacity: 1; }
+:where(.lk) .veil > :not(img) { z-index: 1; }
+:where(.lk) .veil > .eq { position: relative; }
+:where(.lk) .veil > button.cover-play {
+  position: absolute; inset: 0; margin: auto; width: var(--disc, 24px); height: var(--disc, 24px); padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; background: var(--raised); box-shadow: var(--raised-edge); color: var(--on-accent);
+}
+:where(html:not(.alt-press)) .lk .veil > button.cover-play:active { scale: 0.9; }
+:where(.lk) .veil > button.cover-play svg { width: calc(var(--disc, 24px) / 2); height: calc(var(--disc, 24px) / 2); margin: 0; fill: currentColor; stroke: none; }
+/* Sections in a view: a quiet group title with its count beside it (Things), spaced by --sp-6. */
+/* A push button (.btn): a hairline outline on no fill, --hover under the pointer, --press pressed. .btn.primary is
+   the one main action: a flat accent fill, a step toward --fg hovered and pressed. Settings, retry. */
+:where(.lk) .btn {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  height: var(--ctl-h); padding: 0 var(--sp-3); box-sizing: border-box;
+  border: none; border-radius: var(--r-2); background: none; box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--fg); font: inherit; font-weight: 500; white-space: nowrap; cursor: default;
+  transition: background var(--m-5) var(--ease);
+}
+:where(.lk) .btn:hover:not(:disabled) { background: var(--hover); transition-duration: var(--m-1); }
+:where(html:not(.alt-press)) .lk .btn:active:not(:disabled) { background: var(--press); }
+:where(.lk) .btn:disabled { opacity: 0.4; }
+:where(.lk) .btn:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
+:where(.lk) .btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+:where(.lk) .btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, var(--fg)); }
+:where(html:not(.alt-press)) .lk .btn.primary:active:not(:disabled) { background: color-mix(in srgb, var(--accent) 78%, var(--fg)); }
+/* Menu (.menu): a native popover (top layer, light dismiss) of rows, a floating layer (--panel, hairline, --shadow) that
+   scales in from its anchor. Each user anchors and sizes it; Select.svelte and the library filter. */
+:where(.lk) .menu {
+  inset: auto;
+  margin: 0;
+  padding: var(--sp-1);
+  border: none;
+  border-radius: var(--r-3);
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: 0 0 0 0.5px var(--border-strong), var(--shadow);
+  transition: opacity var(--m-2) var(--ease), transform var(--m-2) var(--ease), overlay var(--m-2) allow-discrete, display var(--m-2) allow-discrete;
+}
+:where(.lk) .menu:popover-open { opacity: 1; transform: none; }
+@starting-style { :where(.lk) .menu:popover-open { opacity: 0; transform: scale(0.97) translateY(-2px); } }
+:where(.lk) .menu:not(:popover-open) { opacity: 0; }
+:where(.lk) .menu button { display: flex; align-items: center; gap: var(--sp-3); width: 100%; height: var(--row-h); padding: 0 var(--sp-2); box-sizing: border-box; border: none; border-radius: var(--r-2); background: none; color: var(--fg-2); font: inherit; font-size: var(--fs); text-align: left; white-space: nowrap; cursor: default; }
+:where(.lk) .menu button:hover { color: var(--fg); }
+:where(.lk) .menu [aria-checked="true"], :where(.lk) .menu [aria-selected="true"] { color: var(--fg); font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { :where(.lk) .menu { transition: none; } }
+/* While a hand-dismissed menu is open (html.menu-open, AddTo.svelte) the window under it is inert to the pointer, as
+   under a native menu: nothing lights up or takes a press; the press only closes the menu. */
+html.menu-open body { pointer-events: none; }
+html.menu-open .lk .menu:popover-open { pointer-events: auto; }
+/* Switcher (.seg, a radiogroup of buttons, `use:underline`): underline tabs. No box, no fill: the names side by side
+   in one weight (nothing shifts when the choice moves), the others --fg-3 (--fg-2 under the pointer), the chosen one
+   --fg; one 2px --accent bar under its name glides to the next choice (--x, --w from `underline`; transform only). */
+:where(.lk) .seg { flex: none; position: relative; display: flex; gap: var(--sp-4); height: var(--ctl-h); }
+:where(.lk) .seg::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(50% + 0.5lh + 2px);
+  width: 100px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  transform-origin: left;
+  transform: translateX(var(--x, 0)) scaleX(var(--w, 0));
+  pointer-events: none;
+}
+:where(.lk) .seg[data-ready]::after { transition: transform var(--m-4) var(--ease); }
+:where(.lk) .seg button { flex: none; height: 100%; padding: 0; border: none; background: none; font: inherit; font-weight: 500; color: var(--fg-3); white-space: nowrap; cursor: default; transition: color var(--m-5) var(--ease); }
+:where(.lk) .seg button:hover { color: var(--fg-2); transition-duration: var(--m-1); }
+:where(.lk) .seg [aria-checked="true"], :where(.lk) .seg [aria-checked="true"]:hover { color: var(--fg); transition-duration: var(--m-3); }
+/* A count after an option's name (.n): a step quieter than its name. */
+:where(.lk) .seg .n { margin-left: var(--sp-1); color: var(--fg-3); font-weight: 400; font-variant-numeric: tabular-nums; transition: color var(--m-3) var(--ease); }
+:where(.lk) .seg [aria-checked="true"] .n { color: var(--fg-2); }
+:where(.lk) .seg button:focus { outline: none; }
+:where(.lk) .seg button:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; border-radius: var(--r-1); }
+/* A page head (Home, Search): the .t-page title over one quiet line. */
+:where(.lk) :is(.view, .loaded) > .head { margin-bottom: var(--sp-5); }
+:where(.lk) :is(.view, .loaded) > .head .lede { margin: var(--sp-1) 0 0; color: var(--fg-3); font-size: var(--sub-fs); }
+:where(.lk) .view section + section { margin-top: var(--sp-6); }
+:where(.lk) .sec-head { display: flex; align-items: baseline; gap: var(--sp-2); margin: 0 0 var(--sp-2); }
+:where(.lk) .sec-head .count { color: var(--fg-3); font-size: var(--meta-fs); font-weight: 400; font-variant-numeric: tabular-nums; }
+/* "More" under a list, shelf or text: a quiet pill whose label says what it reveals ("Show 5 more"),
+   a chevron after it that turns over when open; the label sits on the content's left edge, the fill reaches past it. */
+:where(.lk) .view .more-row {
+  display: inline-flex; align-items: center; gap: var(--sp-1); height: var(--ctl-h); margin: var(--sp-2) 0 0 calc(-1 * var(--sp-3)); padding: 0 var(--sp-3);
+  border: 0; border-radius: 999px; background: none; color: var(--fg-2); font: inherit; font-size: var(--meta-fs); font-weight: 600;
+  transition: background var(--m-5) var(--ease), color var(--m-2) var(--ease);
+}
+:where(.lk) .view .more-row:hover { background: var(--hover); color: var(--fg); transition-duration: var(--m-1); }
+:where(.lk) .view .more-row:active { background: var(--press); }
+:where(.lk) .view .more-row:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
+:where(.lk) .view .more-row svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--m-4) var(--ease); }
+:where(.lk) .view .more-row[aria-expanded="true"] svg { transform: rotate(180deg); }
+/* The play/pause glyph (PlayIcon.svelte, .pp): both shapes drawn, the one shown turns in, the other turns out. */
+:where(.lk) .pp { overflow: visible; fill: currentColor; stroke: none; }
+:where(.lk) .pp > * { transform-box: fill-box; transform-origin: center; transition: opacity var(--m-3) var(--ease), transform var(--m-4) var(--ease); }
+:where(.lk) .pp.on .g-play, :where(.lk) .pp:not(.on) .g-pause { opacity: 0; transform: rotate(-90deg) scale(0.4); }
+/* Raised buttons (the item hero's play, Follow, save and shuffle; AGENTS.md "Design" 1): .raised an accent one,
+   .raised-n a neutral one, .raised-n.on pressed in (--sunk, the accent glyph: on). Pointed at, a soft light fades in
+   over it (opacity only, under the glyph or words); pressed, it sinks a pixel and gives way a step. */
+:where(.lk) :is(.raised, .raised-n) { position: relative; isolation: isolate; border: 0; transition: transform var(--m-3) var(--ease); }
+:where(.lk) .raised { background: var(--raised); box-shadow: var(--raised-edge); color: var(--on-accent); }
+:where(.lk) .raised-n { background: var(--raised-n); box-shadow: var(--raised-n-edge); color: var(--fg-2); }
+:where(.lk) .raised-n.on { background: var(--sunk); box-shadow: var(--sunk-edge); color: var(--accent); }
+:where(.lk) :is(.raised, .raised-n)::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: rgb(255 255 255 / 0.16); opacity: 0; transition: opacity var(--m-5) var(--ease);
+}
+:where(.lk) .raised-n::after { background: color-mix(in srgb, var(--fg) 5%, transparent); }
+:where(.lk) :is(.raised, .raised-n):hover::after { opacity: 1; transition-duration: var(--m-1); }
+:where(.lk) .raised-n:hover { color: var(--fg); }
+:where(.lk) .raised-n.on:hover { color: var(--accent); }
+:where(.lk) :is(.raised, .raised-n):active { transform: translateY(1px) scale(0.97); transition-duration: var(--m-1); }
+:where(.lk) :is(.raised, .raised-n):active::after { opacity: 0; transition-duration: var(--m-1); }
+@media (prefers-reduced-motion: reduce) { :where(.lk) :is(.raised, .raised-n):active { transform: none; } }
+/* A song's save button (.like with SaveIcon.svelte: the player, every track row; AGENTS.md "Design" 3): one glyph
+   right after the name. Not saved: a --fg-2 ring with a plus (--fg pointed at); a press adds it to Liked songs.
+   Saved: a filled --accent disc with an --on-accent check; a press opens the save menu (AddTo.svelte: Liked songs and
+   the playlists). The box (--ctl-h, the glyph 0.62 of it) overhangs the line, so a row never grows; a row shows it
+   only pointed at, unless saved. Components set only its placement. */
+:where(.lk) .like {
+  flex: none; align-self: center; display: grid; place-items: center; width: var(--ctl-h); height: var(--ctl-h);
+  margin: calc(var(--ctl-h) / -2 + 0.5lh) calc(var(--ctl-h) * -0.19); padding: 0; border: 0; border-radius: 50%;
+  background: none; color: var(--fg-2); cursor: default; transition: color var(--m-5) var(--ease), opacity var(--m-5) var(--ease);
+}
+:where(.lk) .like:hover, :where(.lk) .like:focus-visible { color: var(--fg); transition-duration: var(--m-1); }
+:where(.lk) .like:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: -1px; }
+:where(.lk) .sv { width: 62%; height: 62%; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+:where(.lk) .sv > * { transform-box: view-box; transform-origin: center; transition: opacity var(--m-3) var(--ease), transform var(--m-4) var(--ease); }
+:where(.lk) .sv .g-plus { stroke-width: 1.8; }
+:where(.lk) .sv .g-disc { fill: var(--accent); stroke: none; }
+:where(.lk) .sv .g-tick { stroke: var(--on-accent); stroke-width: 2.2; }
+:where(.lk) .sv:not(.on) :is(.g-disc, .g-tick) { opacity: 0; transform: scale(0.5); }
+:where(.lk) .sv.on :is(.g-ring, .g-plus) { opacity: 0; transform: scale(1.15); }
+:where(.lk) .like:active .sv { transform: scale(0.88); transition: transform var(--m-1) var(--ease); }
+:where(.lk) .like .sv { transition: transform var(--m-3) var(--ease); }
+@media (prefers-reduced-motion: reduce) { :where(.lk) .sv > *, :where(.lk) .like .sv { transform: none !important; } }
+/* A track row's play (.row-glyph): the bare play/pause glyph in the index's place, no disc (discs are for covers);
+   --fg-2 in the row, --fg pointed at, swells a little under the pointer and dips pressed. */
+:where(.lk) .row-glyph {
+  display: grid; place-items: center; width: var(--disc, 24px); height: var(--disc, 24px); padding: 0; border: 0; background: none; color: var(--fg-2);
+}
+:where(.lk) .row-glyph svg { width: 60%; height: 60%; }
+:where(.lk) .hl .row-glyph.swap-in { transition: opacity var(--m-3) var(--ease), transform var(--m-3) var(--ease), scale var(--m-2) var(--ease), color var(--m-2) var(--ease); }
+:where(.lk) .hl .row-glyph.swap-in:hover { scale: 1.12; color: var(--fg); }
+:where(.lk) .hl .row-glyph.swap-in:active { scale: 0.9; }
+:where(.lk) .hl.now .row-glyph { color: var(--now); }
+/* A name that opens something (an artist in the player or a track row): plain text until pointed at. */
+/* A line too long for its box (.marquee, the motion engine's `marquee` action): at rest it ends in an ellipsis; while
+   playing it glides to its end and back (holds at each end), only by transform, and hover holds it so a link can be
+   clicked. Off under reduced motion or with motion 0. */
+:where(.lk) .marquee { display: block; min-width: 0; overflow: hidden; white-space: nowrap; }
+:where(.lk) .marquee > * { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:where(.lk) .marquee > .links { display: flex; }
+:where(.lk) .marquee.mq-back > * { width: max-content; max-width: none; overflow: visible; }
+:where(.lk) .marquee.mq-on > * { width: max-content; max-width: none; overflow: visible; animation: marquee calc(var(--m-7) * var(--mq-n)) var(--ease-glide) infinite alternate; }
+/* .marquee.peek (a quiet card's lines): it glides while its card is pointed at, so hover runs it instead of holding it. */
+:where(.lk) .marquee:not(.peek):hover > *, :where(.lk) .marquee:not(.peek):has(:focus-visible) > * { animation-play-state: paused; }
+@keyframes marquee { 0%, 20% { transform: none; } 80%, 100% { transform: translateX(var(--mq)); } }
+/* Peek starts at once (the pointer asked for it): a negative delay skips only the first hold; every later return
+   still holds at the start like at the end, right, hold, left, hold. A third slower than playing's, to read. */
+@media (prefers-reduced-motion: no-preference) {
+  :where(.lk) .marquee.peek.mq-on > * { --mq-t: calc(var(--m-7) * var(--mq-n) * 1.5); animation-duration: var(--mq-t); animation-delay: calc(var(--mq-t) * -0.2); }
+}
+@media (prefers-reduced-motion: reduce) { :where(.lk) .marquee.mq-on > * { animation: none; max-width: 100%; overflow: hidden; } }
+/* A row of links (artists): a nowrap flex row, since WebKit breaks lines between inline-block buttons even under nowrap. */
+/* Names keep their full width; what doesn't fit fades out over the row's last 24px (WebKit draws no ellipsis in a button). */
+/* It scrolls sideways (trackpad, wheel with shift, Tab focus) to reach the hidden names; no scrollbar. */
+:where(.lk) .links { display: flex; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; white-space: nowrap; mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
+:where(.lk) .links > * { flex: none; white-space: pre; }
+:where(.lk) .links::-webkit-scrollbar { display: none; }
+:where(.lk) .link { font: inherit; color: inherit; background: none; border: 0; padding: 0; transition: color var(--m-2) var(--ease); }
+:where(.lk) .link:hover, :where(.lk) .link:focus-visible { color: var(--fg); text-decoration: underline; text-underline-offset: 2px; outline: none; }
+/* The playing marker: three pill bars that pulse like a level meter, a quick rise and a slower fall, each on
+   a slightly different period near a beat so the pattern drifts gently instead of looping in lockstep.
+   Paused (.held), they freeze where they are and dim, instead of snapping to a fixed pose. */
+:where(.lk) .eq { flex: none; display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; color: var(--now); transition: opacity var(--m-4) var(--ease); }
+:where(.lk) .eq i { width: 3px; height: 100%; border-radius: 1.5px; background: currentColor; transform: scaleY(0.3); transform-origin: bottom; animation: eq 0.62s infinite; }
+:where(.lk) .eq i:nth-child(2) { animation-duration: 0.74s; animation-delay: -0.3s; }
+:where(.lk) .eq i:nth-child(3) { animation-duration: 0.55s; animation-delay: -0.15s; }
+:where(.lk) .eq.held { opacity: 0.6; }
+:where(.lk) .eq.held i { animation-play-state: paused; }
+@keyframes eq {
+  /* transform, not height: the compositor runs it without a layout and paint every frame. */
+  0% { transform: scaleY(0.3); animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); }
+  22% { transform: scaleY(1); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  100% { transform: scaleY(0.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.lk) .hl .swap-out, :where(.lk) .hl .swap-in, :where(.lk) .pp > *, :where(.lk) .hl.bare .veil > img, :where(.lk) .hl.bare .veil > button.cover-play { transform: none !important; }
+  :where(.lk) .hl.bare { translate: none !important; scale: none !important; }
+  :where(.lk) .eq i { animation: none; }
+  :where(.lk) .seg[data-ready]::after { transition: none; }
+  :where(.lk) .eq i:nth-child(1) { transform: scaleY(0.5); }
+  :where(.lk) .eq i:nth-child(2) { transform: scaleY(0.8); }
+  :where(.lk) .eq i:nth-child(3) { transform: scaleY(0.6); }
+}
+.lk ::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+/* macOS draws native overlay scrollbars that fade after scrolling; custom colours would make them permanent. */
+/* Scrollbars off (the demo always): no scrollbar anywhere; wheel, trackpad and keys still scroll. */
+.lk { --bar-w: 0px; }
+.lk * { scrollbar-width: none; }
+.lk *::-webkit-scrollbar { display: none; }
+.lk :focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
+html.pointer .lk :focus-visible { outline: none !important; }
+:root { --motion: 200ms; }

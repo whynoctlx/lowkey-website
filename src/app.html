@@ -1,20 +1,25 @@
 <!doctype html>
-<html lang="en" class="by-cover tinted" style="--now-h: 280">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Quietify is a lightweight, native desktop player for Spotify Premium. Same account, same library, a calmer and faster window. Free forever." />
+    <meta name="description" content="Lowkey is a native, lightweight desktop player for Spotify Premium on macOS and Windows. Same account, same library, same playback, a calmer window. Free, forever." />
     <meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
     <script>
-      // Dark before the first paint, as the app does (html.dark carries the dark tokens).
+      // Dark tokens hang on html.dark (Settings › Appearance keeps it in step), set before the first paint.
       try {
         const t = localStorage.getItem("theme");
-        const dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.classList.toggle("dark", dark);
-        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        if (t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark");
+        const a = localStorage.getItem("accent");
+        if (a && /^#[0-9a-f]{6}$/i.test(a)) document.documentElement.style.setProperty("--accent-base", a);
       } catch {}
+      // The visitor's platform (the download buttons lead with it, App's shortcuts follow it); set before paint so it
+      // never flips. ?windows or ?mac shows the site as on that platform.
+      const q = new URLSearchParams(location.search);
+      const os = q.has("windows") ? "win" : q.has("mac") ? "mac" : /Windows/.test(navigator.userAgent) ? "win" : /Mac/.test(navigator.userAgent) ? "mac" : "";
+      if (os) document.documentElement.dataset.os = os;
     </script>
     %sveltekit.head%
   </head>
