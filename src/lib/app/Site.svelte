@@ -128,6 +128,7 @@
         { k: "Cold start", v: ["Slow", "Nearly instant", "Slower than Lowkey"], win: true },
         { k: "Opening a page", v: ["Slower", "Nearly instant", "—"], win: true },
         { k: "Resource use", v: ["High", "Low, nothing while idle", "Low"], win: true },
+        { k: "App size", v: ["Over 430 MB", "8.4 MB", "23.4 MB"], win: true },
       ],
     },
     {
@@ -160,6 +161,7 @@
       title: "Account and price",
       rows: [
         { k: "Account", v: ["Free or Premium", "Premium", "Free or Premium"] },
+        { k: "Setup", v: ["Easiest", "Easy, a guided setup explains each step", "Harder, no guided setup"] },
         { k: "Price", v: ["Free with ads, or subscription", "Free, forever", "Free, open source"] },
       ],
     },

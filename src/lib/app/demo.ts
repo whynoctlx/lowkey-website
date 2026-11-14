@@ -57,16 +57,18 @@ const artistItem = (n: string): LibItem => ({ uri: artistUri(n), name: n, image:
 const likedTracks = [...tracks.values()].filter((_, i) => i % 3 === 0).map((t, i) => ({ ...t, added_at: Date.now() - i * 86400e3 * 2 }));
 export const LIKED = "spotify:user:demo:collection";
 
+const al = (id: string) => albums.find((a) => a.id === id)!;
+
 export const lib: Lib = {
   liked: { uri: LIKED, count: likedTracks.length, uris: likedTracks.map((t) => t.uri) },
   playlists: [...playlists, ...mixes.slice(0, 9)].map(item),
-  albums: albums.filter((a) => !a.single).map(item),
+  // A few albums only: the library is mostly playlists.
+  albums: ["redzed-junkie", "pil-c", "chase-status", "scarlxrd", "bring-me-the-horizon"].map((id) => item(al(id))),
   artists: names.filter((n) => albums.some((a) => a.by === n && !a.single)).map(artistItem),
 };
 
 type Card = LibItem & { kind: "playlists" | "albums" | "artists" };
 const card = (a: Album): Card => ({ ...item(a), kind: a.kind === "Album" ? "albums" : "playlists" });
-const al = (id: string) => albums.find((a) => a.id === id)!;
 const mx = (id: string) => mixes.find((a) => a.id === id)!;
 const artistCards = (ns: string[]) => [...new Set(ns)].map((n) => ({ ...artistItem(n), kind: "artists" as const }));
 // Curated keeps the listener's own shelves (made for you, recently, your…); the rest shows in the full feed only.
