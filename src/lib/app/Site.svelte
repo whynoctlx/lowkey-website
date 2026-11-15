@@ -42,15 +42,54 @@
     }).catch(() => (count.total = null));
   }
   export const GITHUB = "https://github.com/whynoctlx";
-  export const DISCORD = "https://discord.gg/ErKZHrrRXp";
-  export const DISCORD_LOGO = "M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52.07.07 0 0 0-.08.04c-.21.38-.44.87-.61 1.25a18.27 18.27 0 0 0-5.49 0 12.64 12.64 0 0 0-.62-1.25.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.99 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-1.99a.08.08 0 0 0-.04-.11 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .08.01l.37.29a.08.08 0 0 1-.01.13c-.6.35-1.22.65-1.87.89a.08.08 0 0 0-.04.11c.36.7.77 1.36 1.22 1.99a.08.08 0 0 0 .09.03 19.84 19.84 0 0 0 6-3.03.08.08 0 0 0 .03-.06c.5-5.18-.84-9.67-3.55-13.66a.06.06 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.95 2.42-2.16 2.42z";
-  export type SitePage = "hero" | "features" | "compare" | "download" | "privacy" | "terms";
+  export type SitePage = "hero" | "features" | "compare" | "download" | "changelog" | "privacy" | "terms";
   /** The sidebar's Lowkey section: uri, name, icon path(s). */
   export const SITE: { uri: string; name: string; icon: string }[] = [
     { uri: "lowkey:features", name: "Features", icon: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" },
     { uri: "lowkey:compare", name: "Side by side", icon: "M4 5h16M4 12h16M4 19h16M10 5v14" },
     { uri: "lowkey:download", name: "Download", icon: "M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" },
+    { uri: "lowkey:changelog", name: "Changelogs", icon: "M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v3.5H8M12 8v4l2.5 2" },
   ];
+
+  /** The changelogs: changelogs/<version>.md in the build repo (0.4.md, 0.4.1.md…), listed by GitHub's API in the visitor's browser (two requests a visit) (newest
+   *  first) and read from raw.githubusercontent.com, so a new file needs no change here. Listed once per visit;
+   *  list is undefined while it loads, null if GitHub can't answer, [] while the folder doesn't exist yet. */
+  export type Changelog = {
+    name: string; version: string; url: string;
+    /** From the file once read: its # title (null without one), a plain summary line, "4 new · 6 improved" from its
+     *  ## sections, the rest as HTML (null if it can't load). */
+    title?: string | null; summary?: string; tally?: string; html?: string | null;
+  };
+  const logs = $state<{ list?: Changelog[] | null }>({});
+  function loadText(l: Changelog) {
+    l.html = undefined;
+    fetch(l.url).then((r) => (r.ok ? r.text() : Promise.reject())).then((t) => {
+      const p = parts(t);
+      const tally = p.sections.filter((x) => x.n).map((x) => `${x.n} ${x.name.toLowerCase()}`).join(" · ");
+      Object.assign(l, { title: p.title, summary: p.summary, tally, html: md(p.body) });
+    }).catch(() => (l.html = null));
+  }
+  function loadLogs() {
+    if (logs.list) return;
+    logs.list = undefined;
+    // Listed at the newest commit, so each file's raw URL names that commit: raw.githubusercontent.com keeps a
+    // branch URL cached for 5 minutes, a commit URL is always that commit's text.
+    const repo = "https://api.github.com/repos/whynoctlx/lowkey-build";
+    fetch(`${repo}/commits/main`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((c: { sha: string }) => fetch(`${repo}/contents/changelogs?ref=${c.sha}`))
+      .then((r) => (r.ok ? r.json() : r.status === 404 ? [] : Promise.reject()))
+      .then((files: { name: string; type: string; download_url: string }[]) => {
+        logs.list = files
+          .filter((f) => f.type === "file" && /\.md$/i.test(f.name))
+          // Newest version first: numeric, so 0.10 comes after 0.9 and 0.4.1 after 0.4.
+          .map((f) => ({ name: f.name, url: f.download_url, version: f.name.replace(/\.md$/i, "").replace(/^v/i, "") }))
+          .sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }));
+        // Read every file at once (raw.githubusercontent.com has no visitor limit): the list shows each one's title.
+        for (const l of logs.list) loadText(l);
+      })
+      .catch(() => (logs.list = null));
+  }
   /** The sidebar's Legal section, under Lowkey: same shape as SITE. */
   export const LEGAL: { uri: string; name: string; icon: string }[] = [
     { uri: "lowkey:privacy", name: "Privacy policy", icon: "M12 3.5 5 6v5.5c0 4.2 3 7.8 7 9 4-1.2 7-4.8 7-9V6z" },
@@ -60,11 +99,25 @@
 
 <script lang="ts">
   import Marquee from "./Marquee.svelte";
+  import { md, parts } from "./md";
 
-  let { page }: { page: SitePage } = $props();
+  let { page, version, openVersion = () => {} }: {
+    page: SitePage;
+    /** On the Changelogs page: the version open (its own page in the window's history), none for the list. */
+    version?: string;
+    /** Opens a version's page, or the list (null). */
+    openVersion?: (v: string | null) => void;
+  } = $props();
   const tour = () => dispatchEvent(new Event("lowkey:tour"));
 
   $effect(loadCount);
+  $effect(() => void (page === "changelog" && loadLogs()));
+
+  /** The open changelog's place in the list (0 is the newest): -1 while the list loads or if there's no such version. */
+  const at = $derived(version === undefined ? null : (logs.list ?? []).findIndex((l) => l.version === version));
+  const show = (i: number | null) => openVersion(i === null ? null : logs.list![i].version);
+
+
 
   const platforms = [
     { os: "mac", name: "macOS", detail: "Apple Silicon", logo: "M12.15 6.9c-.95 0-2.42-1.08-3.96-1.04-2.04.03-3.91 1.18-4.96 3.01-2.12 3.68-.55 9.1 1.52 12.09 1.01 1.45 2.2 3.09 3.79 3.04 1.52-.07 2.09-.99 3.94-.99 1.83 0 2.35.99 3.96.95 1.64-.03 2.68-1.48 3.68-2.95 1.16-1.69 1.64-3.33 1.66-3.42-.04-.01-3.18-1.22-3.22-4.86-.03-3.04 2.48-4.49 2.6-4.56-1.43-2.09-3.62-2.32-4.39-2.38-2-.16-3.68 1.09-4.62 1.09zm3.38-3.07c.84-1.01 1.4-2.43 1.25-3.83-1.21.05-2.66.8-3.53 1.82-.78.9-1.46 2.34-1.27 3.71 1.34.1 2.71-.69 3.55-1.7z" },
@@ -112,10 +165,10 @@
   /** The Privacy policy and Terms of use: [section, blocks]; a block is a paragraph, or a list when it's an array.
       Each fact lives in one document only: data and cookies in the policy, rules, risk and Spotify in the terms. */
   type Doc = [string, (string | string[])[]][];
-  const UPDATED = "14 November 2026";
+  const UPDATED = "15 November 2026";
   const privacyPolicy: Doc = [
     ["Who is responsible", [
-      "Lowkey and this website are made and run by whynoctlx, an independent developer. For any question or request about this policy or your data, contact us on Discord or through our GitHub repository; both are linked on the Download page.",
+      "Lowkey and this website are made and run by whynoctlx, an independent developer. For any question or request about this policy or your data, contact us through our GitHub repository, linked on the Download page.",
     ]],
     ["The Lowkey app", [
       "The app collects nothing about you. It has no account of ours, no server of ours, no analytics, no telemetry, no crash reporting and no ads.",
@@ -262,10 +315,9 @@
           <a class="plat" href={DOWNLOAD(other.os)} onclick={(e) => (e.preventDefault(), getLatest(other.os))}><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={other.logo} /></svg>{other.name}</a>
         {/if}
       </p>
-      <!-- Two pills in one row: the count in the app's own sunk surface, the community in Discord's blurple. -->
+      <!-- The download count in the app's own sunk surface. -->
       <div class="pills">
         {#if count.total !== null}<p class="count" aria-live="polite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" /></svg><b>{count.total === undefined ? "–" : count.shown.toLocaleString("en")}</b> {count.total === 1 ? "download" : "downloads"}</p>{/if}
-        <a class="discord" href={DISCORD} target="_blank" rel="noopener"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d={DISCORD_LOGO} /></svg>Join us on Discord</a>
       </div>
     </div>
   {/each}
@@ -386,6 +438,92 @@
         <h2 class="t-section">Try the difference yourself</h2>
         {@render get()}
       </section>
+    {:else if page === "changelog"}
+      {@const list = logs.list ?? []}
+      {@const l = at === null || at < 0 ? null : list[at]}
+      {#snippet latest()}<span class="latest">Latest</span>{/snippet}
+      {#if version !== undefined && !l}
+        <header class="head">
+          <button class="back" onclick={() => show(null)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6 8.5 12l6 6" /></svg>All changelogs
+          </button>
+          <h1 class="t-page">Lowkey {version}</h1>
+        </header>
+        <div class="card doc md" aria-busy={logs.list === undefined}>
+          {#if logs.list === undefined}<span class="bar w60"></span><span class="bar"></span><span class="bar w80"></span>
+          {:else if logs.list === null}<p class="state">Couldn't reach GitHub just now. <button class="link-btn" onclick={loadLogs}>Try again</button></p>
+          {:else}<p class="state">There's no changelog for this version.</p>{/if}
+        </div>
+      {:else if l && at !== null}
+        <!-- One release: back to the list, its version over its tally, the notes in the reading card, then the neighbours. -->
+        <header class="head">
+          <button class="back" onclick={() => show(null)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6 8.5 12l6 6" /></svg>All changelogs
+          </button>
+          <!-- The release's own name leads when it has one; the version, Latest and the tally share the line under it. -->
+          <h1 class="t-page">{l.title ?? `Lowkey ${l.version}`}</h1>
+          <p class="meta">
+            {#if l.title}<span class="v">Lowkey {l.version}</span>{/if}
+            {#if at === 0}{@render latest()}{/if}
+            {#if l.tally}<span class="dot" aria-hidden="true"></span><span>{l.tally}</span>{/if}
+          </p>
+        </header>
+        <article class="card doc md" aria-busy={l.html === undefined}>
+          {#if l.html}{@html l.html}
+          {:else if l.html === null}<p class="state">Couldn't load this changelog. <button class="link-btn" onclick={() => loadText(l)}>Try again</button></p>
+          {:else}<span class="bar w60"></span><span class="bar"></span><span class="bar w80"></span>{/if}
+        </article>
+        {#if list.length > 1}
+          <nav class="steps" aria-label="More changelogs">
+            {#each [[at - 1, "Newer"], [at + 1, "Older"]] as const as [i, dir] (dir)}
+              {#if list[i]}
+                <button class="card step" class:older={dir === "Older"} onclick={() => show(i)}>
+                  <span class="dir">{dir}</span>
+                  <span class="ttl">Lowkey {list[i].version}</span>
+                  {#if list[i].summary}<span class="sum">{list[i].summary}</span>{/if}
+                </button>
+              {/if}
+            {/each}
+          </nav>
+        {/if}
+      {:else}
+        <header class="head">
+          <h1 class="t-page">Changelogs</h1>
+          <p class="lede">What changed in each version of Lowkey, newest first.</p>
+        </header>
+        {#if logs.list === null}
+          <p class="card state">Couldn't reach GitHub just now. <button class="link-btn" onclick={loadLogs}>Try again</button></p>
+        {:else if logs.list?.length === 0}
+          <p class="card state">No changelogs yet. The first one arrives with the next update.</p>
+        {:else}
+          <!-- A release a row, as its page's head: its name, its first line, then version, Latest and tally. -->
+          <ol class="card logs" aria-busy={logs.list === undefined}>
+            {#each logs.list ?? [0, 1, 2] as l, i (typeof l === "number" ? l : l.name)}
+              <li>
+                {#if typeof l === "number"}
+                  <div class="entry"><span class="what"><span class="bar w40"></span><span class="bar w80"></span><span class="bar w60"></span></span></div>
+                {:else}
+                  <button class="entry" onclick={() => show(i)}>
+                    <span class="what">
+                      {#if l.html === undefined}<span class="bar w40"></span><span class="bar w80"></span><span class="bar w60"></span>
+                      {:else}
+                        <span class="ttl">{l.title ?? `Lowkey ${l.version}`}</span>
+                        {#if l.summary}<span class="sum">{l.summary}</span>{/if}
+                        <span class="meta">
+                          {#if l.title}<span class="v">Lowkey {l.version}</span>{/if}
+                          {#if i === 0}{@render latest()}{/if}
+                          {#if l.tally}<span class="dot" aria-hidden="true"></span><span>{l.tally}</span>{/if}
+                        </span>
+                      {/if}
+                    </span>
+                    <svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6" /></svg>
+                  </button>
+                {/if}
+              </li>
+            {/each}
+          </ol>
+        {/if}
+      {/if}
     {:else if page === "privacy" || page === "terms"}
       {@const [title, lede, doc] = page === "privacy"
         ? ["Privacy policy", "Lowkey collects no personal data. This policy explains what the app and this website handle, and who else is involved.", privacyPolicy]
@@ -459,7 +597,7 @@
           </div>
         </section>
         <footer class="links">
-          <nav aria-label="Links"><a href={GITHUB}>GitHub</a><a href={DISCORD}>Discord</a><a href={RELEASES}>All releases</a></nav>
+          <nav aria-label="Links"><a href={GITHUB}>GitHub</a><a href={RELEASES}>All releases</a></nav>
           <p>© 2026 whynoctlx · Unofficial app, not affiliated with Spotify</p>
         </footer>
       </div>
@@ -532,10 +670,6 @@
   .other a.plat:hover { color: var(--accent); transition-duration: var(--m-1); }
   .other .logo { width: 13px; height: 13px; fill: currentColor; }
   .other em { margin-left: 2px; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--fg-3); font-size: var(--meta-fs); font-style: normal; font-weight: 500; }
-  .discord { display: inline-flex; align-items: center; gap: var(--sp-2); height: 36px; padding: 0 var(--sp-4); border-radius: 18px; background: color-mix(in srgb, #5865f2 14%, transparent); color: var(--fg); font-size: var(--sub-fs); font-weight: 600; text-decoration: none; transition: background var(--m-5) var(--ease); }
-  .discord:hover { background: color-mix(in srgb, #5865f2 24%, transparent); transition-duration: var(--m-1); }
-  .discord .logo { width: 18px; height: 18px; fill: #5865f2; }
-  :global(html.dark) .discord .logo { fill: #8891f7; }
   .get .main.soon { margin: 0; opacity: 0.6; pointer-events: none; }
   /* On a page the buttons sit centred under the page's head, flat: no panel of their own. */
   .view .get { align-items: center; margin: 0 0 var(--sp-7); }
@@ -633,6 +767,69 @@
   .doc ul { padding-left: 1.2em; }
   .doc li + li { margin-top: var(--sp-1); }
   .doc li::marker { color: var(--fg-3); }
+  /* Changelogs: the list one card of release rows (date | title over its first line | chevron), a release a .doc
+     card; the rendered Markdown is unscoped (:global). Placeholders are soft bars that breathe while GitHub answers. */
+  .logs li + li { border-top: 0.5px solid var(--border); }
+  .entry { display: grid; grid-template-columns: minmax(0, 1fr) 16px; align-items: center; gap: var(--sp-1) var(--sp-5); width: 100%; box-sizing: border-box; padding: var(--sp-5); border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+  .logs li:first-child .entry { border-radius: var(--r-3) var(--r-3) 0 0; }
+  .logs li:last-child .entry { border-radius: 0 0 var(--r-3) var(--r-3); }
+  .logs li:only-child .entry { border-radius: var(--r-3); }
+  button.entry { transition: background var(--m-3) var(--ease); }
+  button.entry:hover { background: var(--hover); transition-duration: var(--m-1); }
+  button.entry:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: -2px; }
+  .entry .ttl { font-size: 17px; }
+  .entry .sum { color: var(--fg-2); }
+  .entry .meta { margin: var(--sp-1) 0 0; font-size: var(--sub-fs); }
+  .what { display: grid; gap: var(--sp-1); min-width: 0; }
+  .ttl { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; color: var(--fg); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .sum { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; color: var(--fg); font-size: var(--name-fs); line-height: 1.5; }
+  .step .sum { -webkit-line-clamp: 1; line-clamp: 1; color: var(--fg-2); font-size: var(--sub-fs); }
+  .step.older .sum { text-align: right; }
+  .go { align-self: center; width: 16px; height: 16px; fill: none; stroke: var(--fg-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform: translateX(-4px); transition: opacity var(--m-3) var(--ease), transform var(--m-3) var(--ease); }
+  .entry:is(:hover, :focus-visible) .go { opacity: 1; transform: none; stroke: var(--fg-2); }
+  .latest { flex: none; padding: 2px var(--sp-2); border-radius: 999px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-size: var(--micro-fs); font-weight: 600; letter-spacing: 0.02em; line-height: 1.4; }
+  .bar { display: block; width: 100%; max-width: 32ch; height: 0.7em; margin: 0.35em 0; border-radius: var(--r-1); background: var(--active); animation: breathe 1.4s var(--ease) infinite alternate; }
+  .bar.w40 { width: 40%; } .bar.w60 { width: 60%; } .bar.w80 { width: 80%; }
+  .doc .bar { margin: var(--sp-3) 0; }
+  @keyframes breathe { to { opacity: 0.45; } }
+  @media (prefers-reduced-motion: reduce) { .bar { animation: none; } .go { transition: none; } }
+
+  .back { display: inline-flex; align-items: center; gap: var(--sp-1); margin: 0 0 var(--sp-4) calc(-1 * var(--sp-1)); padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-1); border: 0; border-radius: var(--r-2); background: none; color: var(--fg-2); font: inherit; font-size: var(--sub-fs); transition: background var(--m-3) var(--ease), color var(--m-3) var(--ease); }
+  .back:hover { background: var(--hover); color: var(--fg); transition-duration: var(--m-1); }
+  .back svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: var(--sp-3) 0 0; color: var(--fg-3); font-size: var(--name-fs); font-variant-numeric: tabular-nums; }
+  .meta:empty { display: none; }
+  .meta .v { color: var(--fg-2); font-weight: 600; }
+  .meta .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+  .meta .dot:first-child { display: none; }
+  .state { margin: 0; padding: var(--sp-5); color: var(--fg-2); font-size: var(--name-fs); }
+  .doc .state { padding-inline: 0; }
+
+  .steps { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-5); }
+  .step { display: grid; gap: var(--sp-1); padding: var(--sp-4) var(--sp-5); color: inherit; font: inherit; text-align: left; transition: background var(--m-3) var(--ease), border-color var(--m-3) var(--ease); }
+  .step.older { grid-column: 2; text-align: right; }
+  .step:hover { background: var(--hover); border-color: var(--border-strong); transition-duration: var(--m-1); }
+  .step .dir { color: var(--fg-3); font-size: var(--meta-fs); font-weight: 500; }
+  .step .ttl { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  @container (max-width: 560px) {
+    .entry { padding: var(--sp-4); }
+    .steps { grid-template-columns: 1fr; }
+    .step.older { grid-column: 1; }
+  }
+
+  .md { padding-block: var(--sp-5); }
+  .md :global(:is(h2, h3, h4)) { margin: var(--sp-6) 0 var(--sp-2); color: var(--fg); font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+  .md :global(:is(h3, h4)) { color: var(--fg-2); font-size: var(--sub-fs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .md :global(:first-child) { margin-top: 0; }
+  .md :global(:is(p, ul)) { max-width: 68ch; margin: 0 0 var(--sp-3); color: var(--fg-2); font-size: var(--name-fs); line-height: 1.65; }
+  .md :global(:is(p, ul):last-child) { margin-bottom: 0; }
+  .md :global(ul) { padding-left: 1.2em; }
+  .md :global(li + li) { margin-top: var(--sp-1); }
+  .md :global(li::marker) { color: var(--accent); }
+  .md :global(strong) { color: var(--fg); font-weight: 600; }
+  .md :global(code) { padding: 0.1em 0.35em; border-radius: var(--r-1); background: var(--active); color: var(--fg); font-size: 0.9em; }
+  .md :global(a) { color: var(--fg); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 2px; transition: text-decoration-color var(--m-3) var(--ease); }
+  .md :global(a:hover) { text-decoration-color: var(--accent); }
   .doc .updated { margin: 0; padding: var(--sp-4) 0; color: var(--fg-3); font-size: var(--sub-fs); }
   .btn { flex: none; display: inline-flex; align-items: center; height: var(--ctl-h); padding: 0 var(--sp-3); border-radius: var(--r-2); color: var(--fg); font-size: var(--fs); font-weight: 500; }
   .btn:active { transform: translateY(1px) scale(0.97); }

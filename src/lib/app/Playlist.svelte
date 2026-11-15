@@ -27,6 +27,8 @@
     copyright?: { type?: string; text: string }[];
     /** Artists: portrait, bio, genres and the discography / related shelves. */
     image?: string | null;
+    /** Spotify's wide header photo, when the artist has one. */
+    banner?: string | null;
     bio?: string | null;
     genres?: string[] | null;
     sections?: { key: string; title: string; total?: number; rows: Row[] }[];
@@ -58,6 +60,7 @@
     pause,
     retry,
     open,
+    findArtist,
     play,
     shuffle,
     setShuffle,
@@ -81,6 +84,8 @@
     pause: () => void;
     retry: () => void;
     open: (row: Row) => void;
+    /** Spotify's artist of a name (a playlist description's names whose songs aren't listed, e.g. a mix since refreshed). */
+    findArtist: (name: string) => Promise<{ name: string; uri?: string } | undefined>;
     play: (uri: string) => void;
     /** The player's shuffle (Soloist's option, or the choice waiting for it): on, a play starts this item shuffled. */
     shuffle: boolean;
@@ -97,9 +102,8 @@
 
   const isArtist = $derived(item.kind === "artists");
   const cover = $derived(item.image ?? info.image);
-  // An artist shows five popular tracks until asked for all ten, as in Spotify.
-  let more = $state(false);
-  const shown = $derived(isArtist && !more ? tracks?.slice(0, 5) : tracks);
+  // An artist's ten popular tracks, in two columns of five.
+  const shown = $derived(isArtist ? tracks?.slice(0, 10) : tracks);
   // Discography: the artist's own release groups behind one switch; "appears on" and related artists get shelves of their own.
   const disco = $derived((info.sections ?? []).filter((s) => !["related", "appears_on"].includes(s.key) && s.rows.length));
   const appears = $derived(info.sections?.find((s) => s.key === "appears_on"));
@@ -220,11 +224,20 @@
   );
 </script>
 
-{#snippet names(s: string)}{#if who(s)}{#each s.split(SPLIT) as p, j}{@const a = j % 2 ? undefined : byName.get(p.toLowerCase())}{#if a}<button class="link" onclick={() => openArtist(a)} data-open={a.uri}>{p}</button>{:else}{p}{/if}{/each}{:else}{s}{/if}{/snippet}
+{#snippet names(s: string)}{#if who(s)}{#each s.split(SPLIT) as p, j}{@const a = j % 2 || !p ? undefined : byName.get(p.toLowerCase())}{#if a}<button class="link" onclick={() => openArtist(a)} data-open={a.uri}>{p}</button>{:else if j % 2 === 0 && p}<button class="link" onclick={() => findArtist(p).then((f) => f?.uri && openArtist(f))}>{p}</button>{:else}{p}{/if}{/each}{:else}{s}{/if}{/snippet}
 
-<article class="view" class:artist={item.kind === "artists"}>
+<!-- An album page shows no tooltips (`data-no-tip`, AGENTS.md › Tooltip). -->
+<article class="view" class:artist={item.kind === "artists"} class:waiting={isArtist && info.banner === undefined && !error} data-no-tip={isAlbum || undefined}>
+  <!-- An artist's banner: a photo from the window's top down behind the hero, which lies on it on a see-through panel
+       (the Transparency setting). The artist's page stays hidden until it is known (`info.banner` undefined meanwhile,
+       null when it has none), so nothing moves when it opens. -->
+  <div class="head">
+  {#if isArtist && info.banner}
+    <div class="banner"><img src={info.banner} alt="" /></div>
+  {/if}
   <header class="hero">
-    <div class="art">
+    <!-- With a banner (or while one may come) the artist's photo is there: no portrait. -->
+    <div class="art" hidden={(isArtist && info.banner !== null && !error) || undefined}>
       {#if item.kind === "liked"}
         <div class="cover liked" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path class="fill" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
@@ -251,12 +264,13 @@
       <!-- A mix's description is often its line again ("Harper, Bad Omens a ďalší"): said once. -->
       {#if info.description && info.description.trim() !== lead.trim()}<p class="desc" in:enter={{ y: 0, collapse: true }} out:exit={{ y: 0, collapse: true }}>{@render names(info.description)}</p>{/if}
       {#if isArtist && info.bio}
-        <div class="about" aria-label={L.item.aboutArtist} in:enter={{ y: 0, collapse: true }} out:exit={{ y: 0, collapse: true }}>
-          <p class="clamp">{info.bio}</p>
-          <button class="more-row" aria-haspopup="dialog" onclick={() => (aboutOpen = true)}>
+        <!-- The whole block opens the dialog; pointed at anywhere, its Read more lights as if pointed at itself. -->
+        <button class="about" aria-haspopup="dialog" onclick={() => (aboutOpen = true)} in:enter={{ y: 0, collapse: true }} out:exit={{ y: 0, collapse: true }}>
+          <span class="clamp">{info.bio}</span>
+          <span class="more-row">
             {L.item.readMore}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-          </button>
-        </div>
+          </span>
+        </button>
       {/if}
     </div>
     <!-- Shuffle beside the play, the player's own switch: on, the play starts this item in shuffled order. -->
@@ -290,6 +304,7 @@
     </button>
     </div>
   </header>
+  </div>
 
   {#if isArtist}<div class="sec-head pad"><h2 class="t-section">{L.item.popular}</h2></div>{/if}
 
@@ -345,8 +360,15 @@
                   </button>
                 {/if}
               </span>
+              <!-- An artist's popular track: who else is on it, its album and year (the page's own artist isn't repeated). -->
+              {#if isArtist}
+                {@const feat = t.artists.filter((a) => a.uri !== item.uri)}
+                {@const album = t.album && t.album.toLowerCase() !== t.name.toLowerCase() && t.album.toLowerCase() !== title(t).toLowerCase()}
+                <span class="sub"><span class="who links">{#if feat.length}<span>{L.item.feat}&nbsp;</span>{/if}{#each feat as a, j}{#if j}<span>{", "}</span>{/if}{#if a.uri}<button class="link" onclick={(e) => (e.stopPropagation(), openArtist(a))} data-open={a.uri}>{a.name}</button>{:else}<span>{a.name}</span>{/if}{/each}{#if feat.length && (album || t.year)}<span class="dot">·</span>{/if}{#if album}{#if t.album_uri}<button class="link" data-open={t.album_uri} onclick={(e) => (e.stopPropagation(), open({ uri: t.album_uri!, name: t.album, image: t.image, kind: "albums", line: L.kind.album }))}>{t.album}</button>{:else}<span>{t.album}</span>{/if}{/if}{#if t.year}{#if album}<span class="dot">·</span>{/if}<span>{t.year}</span>{/if}</span></span>
+              {:else}
               <!-- Artists, then the album (a single's album is its own name: left out rather than repeated). -->
-              <span class="sub"><span class="who links">{#each t.artists as a, j}{#if j}<span>{", "}</span>{/if}{#if a.uri}<button class="link" onclick={(e) => (e.stopPropagation(), openArtist(a))} data-open={a.uri}>{a.name}</button>{:else}<span>{a.name}</span>{/if}{/each}{#if !isAlbum && !isArtist && t.album && t.album.toLowerCase() !== t.name.toLowerCase() && t.album.toLowerCase() !== title(t).toLowerCase()}<span class="dot">·</span>{#if t.album_uri}<button class="link" title={t.album} data-open={t.album_uri} onclick={(e) => (e.stopPropagation(), open({ uri: t.album_uri!, name: t.album, image: t.image, kind: "albums", line: L.kind.album }))}>{t.album}</button>{:else}<span>{t.album}</span>{/if}{/if}</span></span>
+              <span class="sub"><span class="who links">{#each t.artists as a, j}{#if j}<span>{", "}</span>{/if}{#if a.uri}<button class="link" onclick={(e) => (e.stopPropagation(), openArtist(a))} data-open={a.uri}>{a.name}</button>{:else}<span>{a.name}</span>{/if}{/each}{#if !isAlbum && !isArtist && t.album && t.album.toLowerCase() !== t.name.toLowerCase() && t.album.toLowerCase() !== title(t).toLowerCase()}<span class="dot">·</span>{#if t.album_uri}<button class="link" data-open={t.album_uri} onclick={(e) => (e.stopPropagation(), open({ uri: t.album_uri!, name: t.album, image: t.image, kind: "albums", line: L.kind.album }))}>{t.album}</button>{:else}<span>{t.album}</span>{/if}{/if}</span></span>
+              {/if}
             </span>
             {#if dated}<span class="added" title={t.added_at ? L.item.added(dtf.format(t.added_at)) : undefined}>{t.added_at ? addedAt(t.added_at) : ""}</span>{/if}
             <span class="dur">{mmss(t.duration_ms)}</span>
@@ -357,19 +379,13 @@
         {#if windowed}<li class="spacer" aria-hidden="true" style:height="{(shown!.length - start - rows.length) * rowH}px"></li>{/if}
     </ol>
     {:else}
-    <ol class="list" class:album={isAlbum} aria-hidden="true" in:enter={{ y: 0 }} out:exit={{ y: 0 }}>
-        {#each Array(isArtist ? 5 : 10) as _}
+    <ol class="list" class:album={isAlbum} class:artist={isArtist} aria-hidden="true" in:enter={{ y: 0 }} out:exit={{ y: 0 }}>
+        {#each Array(10) as _}
           <li class="track skeleton" aria-hidden="true">
             <span class={isAlbum ? "num" : "pic"}></span><span class="text"><span></span><span></span></span>
           </li>
         {/each}
     </ol>
-    {/if}
-
-    {#if isArtist && tracks && tracks.length > 5}
-      <button class="more-row pad" aria-expanded={more} onclick={() => (more = !more)}>
-        {more ? L.item.showLess : L.item.showMore(tracks.length - 5)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-      </button>
     {/if}
 
     {#if isAlbum && tracks && (released || info.label || info.copyright?.length)}
@@ -431,7 +447,7 @@
 <!-- About the artist: the whole bio in a reading sheet (the global .sheet, smaller). -->
 {#if aboutOpen}
   <dialog
-    class="sheet small" aria-label={L.item.aboutArtist} tabindex="-1" use:modal
+    class="sheet small glass" aria-label={L.item.aboutArtist} tabindex="-1" use:modal
     in:enter={{ y: 8, sheet: true }} out:exit={{ y: 8, sheet: true, f: 0.6 }}
     oncancel={(e) => (e.preventDefault(), (aboutOpen = false))}
     onclick={(e) => e.target === e.currentTarget && (aboutOpen = false)}
@@ -450,15 +466,33 @@
 {/if}
 
 <style>
-  .view { min-height: 100%; padding-bottom: var(--sp-6); }
+  /* flow-root: the banner's negative margin stays inside, not collapsing through to the page, or a leaving page
+     (pinned absolute, which stops the collapse) jumped up by the toolbar's height. */
+  .view { display: flow-root; min-height: 100%; padding-bottom: var(--sp-6); }
   /* .btn is the global push button; :where keeps this reset as weak as a plain `button`. */
-  button:where(:not(.btn, .raised, .raised-n)) { font: inherit; color: inherit; border: none; background: none; padding: 0; cursor: default; }
+  button:where(:not(.btn, .raised, .raised-n, .like)) { font: inherit; color: inherit; border: none; background: none; padding: 0; }
   svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   svg .fill { fill: currentColor; stroke: none; }
 
   /* Header: the cover is the only colour, and throws a soft shadow in its own colours (as in the player). */
   /* One row: cover, then title over one meta line (kind first), and the play at the far right, all centred on the cover. */
   .hero { display: flex; align-items: center; gap: var(--sp-6); padding: var(--sp-6) var(--gutter); }
+  /* With a banner the head is one cell: the photo fills it edge to edge, up under the toolbar (from the window's top,
+     fading under it like every page) and down behind the hero. Its first row is the photo alone (2:1, at most
+     --banner-max), the hero lies on the photo's lower part (no blur: AGENTS.md "Design"). An explicit width: with
+     `auto`, max-height carries through the ratio and narrows it. */
+  .head:has(.banner) { display: grid; margin-top: calc(-1 * var(--top-h)); }
+  .head:has(.banner)::before { content: ""; grid-area: 1 / 1; width: 100%; aspect-ratio: 2; max-height: calc(var(--banner-max) + var(--top-h)); }
+  .banner { grid-area: 1 / 1 / 3 / 2; min-height: 0; }
+  /* The hero's ground rises out of the photo: clear at its top, the panel see-through by the Transparency setting in
+     the middle, the full panel at its foot, so the photo melts into the page with no edge. */
+  .banner + .hero {
+    grid-area: 2 / 1; position: relative;
+    background: linear-gradient(transparent 20%, color-mix(in srgb, var(--panel) var(--glass-tint, 65%), transparent) 35%, var(--panel) 55%);
+  }
+  .waiting { visibility: hidden; }
+  .banner img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
+  .art[hidden] { display: none; }
   .art { position: relative; flex: none; width: var(--hero-cover); height: var(--hero-cover); isolation: isolate; }
   .cover {
     position: relative;
@@ -545,6 +579,10 @@
      the hover fill alone; each reads number, cover, name over "artists · album", then the quiet date and time. */
   .list { margin: 0; padding: 0 calc(var(--gutter) - var(--sp-2)); list-style: none; display: flex; flex-direction: column; }
   .list:not(.album) { --pos-w: 32px; }
+  /* An artist's popular tracks: 1–5 down the left, 6–10 down the right (one column on a narrow panel). */
+  .list.artist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; column-gap: var(--sp-6); }
+  /* A chart: the rank at the name's size. */
+  .list.artist .num { font-size: var(--name-fs); font-weight: 500; }
   .spacer { flex: none; }
   .list:not(.album) .track:not(.skeleton) { grid-template-columns: var(--pos-w) auto minmax(0, 1fr) auto; }
   .list.dated .track:not(.skeleton) { grid-template-columns: var(--pos-w) auto minmax(0, 1fr) auto auto; }
@@ -576,7 +614,7 @@
 
   .pic img, .thumb { width: var(--thumb); height: var(--thumb); border-radius: var(--r-2); flex: none; object-fit: cover; background: var(--active); }
   .pic img { outline: 0.5px solid color-mix(in srgb, var(--fg) 10%, transparent); outline-offset: -0.5px; }
-  .text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .text { flex: 1; display: flex; flex-direction: column; gap: var(--sp-0); min-width: 0; }
   .name, .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .name { display: flex; align-items: baseline; gap: var(--sp-2); color: var(--fg); font-weight: 500; font-size: var(--name-fs); line-height: 1.3; }
   .name .title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -589,22 +627,31 @@
   .artist .sec-head { margin-bottom: var(--sp-3); }
   .artist .sec-head.pad { margin-top: var(--sp-2); }
   .artist .sec-head .seg { margin-left: auto; align-self: center; }
-  .more-row.pad { margin: var(--sp-2) 0 0 calc(var(--gutter) - var(--sp-3)); }
   .blocks { padding: var(--sp-7) var(--gutter) 0; }
   .blocks > section + section { margin-top: var(--sp-7); }
   /* About in the hero: two lines of bio at a reading measure, the rest in the sheet. */
-  .about { margin-top: var(--sp-2); }
-  .about .more-row { margin-top: var(--sp-1); }
-  .about p { margin: 0; max-width: 72ch; color: var(--fg-2); font-size: var(--sub-fs); line-height: 1.6; }
-  .about p.clamp { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* One button: pointed at, the whole block takes --hover (its padding sits in negative margins, so the text stays put). */
+  .about {
+    display: block; width: fit-content; margin: 0 calc(-1 * var(--sp-3)) calc(-1 * var(--sp-2)); padding: var(--sp-2) var(--sp-3);
+    border: none; border-radius: var(--r-3); background: none; font: inherit; text-align: left;
+    transition: background var(--m-5) var(--ease);
+  }
+  .about:hover { background: var(--hover); transition-duration: var(--m-1); }
+  .about:active { background: var(--press); }
+  .about .more-row { margin-top: var(--sp-1); background: none; }
+  .about:hover .more-row { color: var(--fg); }
+  .about:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
+  .about .clamp { margin: 0; max-width: 72ch; color: var(--fg-2); font-size: var(--sub-fs); line-height: 1.6; }
+  .about .clamp { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   /* The release count beside the Discography heading, with one kind only (in the switch the global .seg .n draws it). */
   .t-section .n { margin-left: var(--sp-1); color: var(--fg-3); font-weight: 400; font-variant-numeric: tabular-nums; }
-  .about-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); height: calc(var(--ctl-h) + 2 * var(--sp-3)); padding: 0 var(--sp-3) 0 var(--sp-5); }
+  .about-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); height: calc(var(--ctl-h) + 2 * var(--sp-3)); padding: 0 var(--sp-3) 0 var(--sp-5); }
   .about-bar h2 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .close { flex: none; display: grid; place-items: center; width: var(--ctl-h); height: var(--ctl-h); border-radius: var(--r-2); color: var(--fg-3); }
   .close svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
   /* Under the bar without a rule: the text fades out at the scroll edges, like every scroller (AGENTS.md). */
   .about-body {
+    min-height: 0;
     overflow-y: auto;
     padding: var(--sp-2) var(--sp-5) var(--sp-5);
     -webkit-mask-image: linear-gradient(transparent, #000 var(--sp-2), #000 calc(100% - var(--sp-5)), transparent);
@@ -639,6 +686,7 @@
   @container (max-width: 760px) {
     .list.dated .track:not(.skeleton) { grid-template-columns: var(--pos-w) auto minmax(0, 1fr) auto; }
     .added { display: none; }
+    .list.artist { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-flow: row; }
   }
   @container (max-width: 600px) {
     .view { --gutter: var(--sp-4); }

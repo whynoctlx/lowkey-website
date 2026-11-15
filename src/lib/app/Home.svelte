@@ -1,11 +1,24 @@
 <script lang="ts" module>
   import type { LibItem } from "./Library.svelte";
+  import { L } from "./i18n";
   type Card = LibItem & { kind: "playlists" | "albums" | "artists" };
   export type HomeFeed = { greeting: string | null; sections: { title: string | null; shortcuts: boolean; items: Card[] }[] };
+  /** By default Curated keeps the shelves made from the user's own listening (made for them, their mixes and top,
+   *  recently played); `picks` (Settings › Layout › Curated shelves) overrides that per shelf title. */
+  const MINE = /^(zostavené pre|made for|tvoje|your|nedávno|recently)/i;
+  export const curatedByDefault = (title: string) => MINE.test(title);
+  export const isCurated = (title: string, picks: Record<string, boolean>) => picks[title] ?? MINE.test(title);
+  /** A shelf's name as shown (and as picks are kept): "Made for <nick>" is "Made for You", so no nick shows and a
+   *  renamed account keeps its picks. */
+  const MADE_FOR = /^(?:zostavené pre|made for):? .+$/i;
+  export const shelfName = (title: string | null) => (title && MADE_FOR.test(title) ? L.home.madeForYou : (title ?? ""));
+  /** The shelves Curated can pick from: titled, not shortcuts, not empty, each name once. */
+  export const shelfTitles = (feed: HomeFeed | null) => [
+    ...new Set((feed?.sections ?? []).filter((s) => !s.shortcuts && s.title && s.items.length).map((s) => shelfName(s.title))),
+  ];
 </script>
 
 <script lang="ts">
-  import { L } from "./i18n";
   import type { Density, Row } from "./Library.svelte";
   import Tile from "./Tile.svelte";
   import { enter, exit, underline } from "./motion.svelte";
@@ -15,6 +28,7 @@
     feed,
     full = false,
     setFull,
+    picks = {},
     density = "regular",
     error,
     retry,
@@ -28,6 +42,8 @@
     /** Every section as Spotify sends it, shortcuts included, instead of the pruned home. */
     full?: boolean;
     setFull: (on: boolean) => void;
+    /** The user's Curated shelf choices, by title. */
+    picks?: Record<string, boolean>;
     /** Home's own density (Settings › Layout › Home). */
     density?: Density;
     error: string;
@@ -46,16 +62,14 @@
   const row = (i: Card): Row => ({ ...i, line: i.kind === "artists" || !i.sub ? kind[i.kind] : `${kind[i.kind]} · ${i.sub}` });
 
   // Full feed: every section in Spotify's order, all items, as cover tiles.
-  // Curated: only the shelves made from the user's own listening (made for them, their mixes and top, recently
-  // played), as cleaner cards: larger covers, the name and only who plays on it; shortcuts and recommendation shelves (stations, "for fans of", "more like") stay
+  // Curated: only the shelves the user picked (by default those from their own listening, `isCurated`), as cleaner cards: larger covers, the name and only who plays on it; shortcuts and recommendation shelves (stations, "for fans of", "more like") stay
   // in the full feed. An item shows once: a later shelf drops what is already above.
-  const all = $derived((feed?.sections ?? []).filter((s) => s.items.length).map((s) => ({ title: s.title ?? "", rows: s.items.map(row) })));
-  const MINE = /^(zostavené pre|made for|tvoje|your|nedávno|recently)/i;
+  const all = $derived((feed?.sections ?? []).filter((s) => s.items.length).map((s) => ({ title: shelfName(s.title), rows: s.items.map(row) })));
   const lists = $derived.by(() => {
     const seen = new Set<string>();
     return (feed?.sections ?? [])
-      .filter((s) => !s.shortcuts && MINE.test(s.title ?? ""))
-      .map((s) => ({ title: s.title ?? "", rows: s.items.filter((i) => !seen.has(i.uri) && seen.add(i.uri)).map(row) }))
+      .filter((s) => !s.shortcuts && isCurated(shelfName(s.title), picks))
+      .map((s) => ({ title: shelfName(s.title), rows: s.items.filter((i) => !seen.has(i.uri) && seen.add(i.uri)).map(row) }))
       .filter((l) => l.rows.length);
   });
 </script>

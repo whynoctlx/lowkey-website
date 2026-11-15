@@ -50,8 +50,7 @@ Thumbs.db
 desktop.ini
 
 # Local tool state
-.impeccable/hook.cache.json
-.impeccable/review/
+.impeccable
 .claude/settings.local.json
 tmp
 *.tmp

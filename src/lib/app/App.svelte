@@ -15,7 +15,7 @@
   import AddTo from "./AddTo.svelte";
   import { enter, exit, initMotion, motion } from "./motion.svelte";
   import { holdTiles } from "./tiles";
-  import Site, { SITE, LEGAL, type SitePage, getLatest, DISCORD, DISCORD_LOGO } from "./Site.svelte";
+  import Site, { SITE, LEGAL, type SitePage, getLatest } from "./Site.svelte";
   import Settings from "./Settings.svelte";
   import Tour, { type Stop } from "./Tour.svelte";
   import * as demo from "./demo";
@@ -126,7 +126,13 @@
   const asRow = (s: (typeof SITE)[number]): Row => ({ uri: s.uri, name: s.name, icon: s.icon, kind: "site", line: "" });
   const siteRows = SITE.map(asRow);
   const legalRows = LEGAL.map(asRow);
-  const sitePage = (uri?: string) => ([...SITE, ...LEGAL].some((s) => s.uri === uri) ? (uri!.slice(7) as SitePage) : null);
+  // A changelog is a page of its own (lowkey:changelog/0.4), so back from it returns to the list.
+  const LOG = "lowkey:changelog/";
+  const sitePage = (uri?: string) => (uri?.startsWith(LOG) ? "changelog" : [...SITE, ...LEGAL].some((s) => s.uri === uri) ? (uri!.slice(7) as SitePage) : null);
+  const openVersion = (v: string | null) => {
+    const list = siteRows.find((r) => r.uri === "lowkey:changelog")!;
+    open(v ? { ...list, uri: LOG + v, name: v } : list);
+  };
   const tracks = $derived(selected && !sitePage(selected.uri) ? (selected.uri === RECENT ? played : loaded(selected.uri)) : null);
   const info = $derived(selected && selected.uri !== RECENT && !sitePage(selected.uri) ? demo.itemData(selected.uri).info : {});
 
@@ -146,7 +152,9 @@
   // back/forward buttons, the browser's own and a trackpad swipe walk the window, not the site.
   // The legal pages have their own links (?privacy, ?tos) that open them and show while they're open.
   const LINKS: Record<string, string> = { privacy: "lowkey:privacy", tos: "lowkey:terms", terms: "lowkey:terms" };
-  const urlFor = (v: View) => ({ "lowkey:privacy": "?privacy", "lowkey:terms": "?tos" })[v.row?.uri ?? ""] ?? location.pathname;
+  // Changelogs too: ?changelog for the list, ?changelog=0.4 for one version.
+  const urlFor = (v: View, uri = v.row?.uri ?? "") =>
+    uri.startsWith(LOG) ? `?changelog=${encodeURIComponent(uri.slice(LOG.length))}` : ({ "lowkey:privacy": "?privacy", "lowkey:terms": "?tos", "lowkey:changelog": "?changelog" })[uri] ?? location.pathname;
   function navigate(v: View) {
     back = [...back, snap()];
     fwd = [];
@@ -322,8 +330,10 @@
     // A reload keeps the entry's old depth in the browser's history while the window starts at the start: reset it, or
     // the first page opened pushes a depth that's already there and back does nothing.
     const link = Object.keys(LINKS).find((k) => new URLSearchParams(location.search).has(k));
-    replaceState(link ? location.pathname : "", { lk: 0 });
+    const log = new URLSearchParams(location.search).get("changelog");
+    replaceState(link || log !== null ? location.pathname : "", { lk: 0 });
     if (link) open(legalRows.find((r) => r.uri === LINKS[link])!, true);
+    else if (log !== null) openVersion(log || null);
     // A shared or opened download link (?download=mac|win) starts that download.
     const os = new URLSearchParams(location.search).get("download");
     if (os) getLatest(os);
@@ -372,6 +382,8 @@
     {#if mounted}
   <div class="app with-lib" class:mini={libMini} class:no-lib={libHidden} class:gliding={libGlide} style="--lib-w: {libHidden ? 0 : width}px">
     <header class="top">
+      <!-- Two glass capsules, as in the app: panel toggle, history and path; then search, the site's Tour, settings. -->
+      <div class="cap nav">
       <div class="history">
         <button class="ic side-toggle"
           aria-label={libHidden ? L.app.showLibrary : libMini ? L.app.expandLibrary : L.app.hideLibrary}
@@ -405,6 +417,8 @@
           </span>
         {/each}
       </nav>
+      </div>
+      <div class="cap tools">
       <label class="find">
         <span class="lens" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg></span>
         <input
@@ -424,10 +438,6 @@
       <button class="tour-btn" class:on={touring} aria-pressed={touring} title="Take the tour" onclick={startTour}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="m14.8 9.2-1.6 4-4 1.6 1.6-4z" /></svg><span>Tour</span>
       </button>
-      <!-- The community: a quiet toolbar item like Tour. -->
-      <a class="discord-btn" href={DISCORD} target="_blank" rel="noopener" title="Join the Lowkey Discord">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={DISCORD_LOGO} /></svg><span>Discord</span>
-      </a>
       <!-- Settings: the demo has Appearance only. -->
       <button class="gear ic" class:on={settingsOpen} aria-label={L.app.settings} aria-pressed={settingsOpen} title="{L.app.settings} ({MOD},)" onclick={() => (settingsOpen = !settingsOpen)}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -435,6 +445,7 @@
           <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
         </svg>
       </button>
+      </div>
     </header>
     {#if !libHidden}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
@@ -458,7 +469,7 @@
           {/if}
         </nav>
         <Library bind:this={libView} kbd={MAC ? "⇧⌘F" : "Ctrl+Shift+F"} mini={libMini}
-          {lib} error="" current={source} artists={playback.item?.decorations?.creators?.map((c) => c.entity?.uri) ?? []} {playing} selected={searchOpen || homeOpen ? undefined : selected?.uri}
+          {lib} error="" current={source} artists={playback.item?.decorations?.creators?.map((c) => c.entity?.uri) ?? []} {playing} selected={searchOpen || homeOpen ? undefined : selected?.uri.startsWith(LOG) ? "lowkey:changelog" : selected?.uri}
           recent={libRecent && played.length ? { uri: RECENT, name: L.app.recentlyPlayed, kind: "recent", line: `${L.kind.playlist} · ${L.common.songs(played.length)}` } : undefined}
           open={(r) => open(r, true)} home={goHome} homeOn={homeOpen && !searchOpen} reload={() => {}} login={() => {}}
           {pins} setPins={(p) => (pins = p)} sort={libSort} setSort={(s) => (libSort = s)} {playedAt} play={playContext} density={libDensity} setDensity={(d) => (libDensity = d)}
@@ -478,7 +489,8 @@
               <Site page="hero" />
               <Home feed={demo.feed} full={homeFull} setFull={(on) => (homeFull = on)} error="" retry={() => {}} {open} play={playContext} current={source} {playing} />
             {:else if sitePage(untrack(() => page))}
-              <Site page={sitePage(untrack(() => page))!} />
+              {@const uri = untrack(() => page)}
+              <Site page={sitePage(uri)!} version={uri.startsWith(LOG) ? uri.slice(LOG.length) : undefined} {openVersion} />
             {:else if untrack(() => selected)}
               {@const own = untrack(() => selected)!}
               <Playlist
@@ -488,6 +500,7 @@
                 playTrack={(uri) => playTrack(uri, own.uri)} pause={() => send("pause")} retry={() => {}}
                 {open} play={playContext} {shuffle} setShuffle={(enabled) => send("set_shuffle", { enabled })}
                 saved={inLib(own)} setSaved={(on) => setSaved(own, on)} liked={likedSet} {setLiked} {addTo}
+                findArtist={async (name) => { const r = demo.search(name).artists; return r.find((a) => a.name.toLowerCase() === name.toLowerCase()) ?? r[0]; }}
               />
             {/if}
           </div>
@@ -582,6 +595,13 @@
     border-radius: var(--body-r);
     container-type: inline-size;
   }
+  /* Under the toolbar a veil of the panel over what scrolls up: 80% at the body's top, clear a little below the
+     capsules' top edge, so the strip above them is masked and little else. */
+  .with-lib .stage::before {
+    content: ""; position: absolute; inset: 0 0 auto; z-index: 1; height: var(--top-h);
+    border-radius: inherit; pointer-events: none;
+    background: linear-gradient(color-mix(in srgb, var(--panel) 80%, transparent), transparent calc(var(--top-h) / 3));
+  }
   .with-lib .stage::after {
     content: "";
     position: absolute;
@@ -598,12 +618,12 @@
     overflow-y: auto;
     border-radius: inherit;
     padding: var(--top-h) 0 var(--sp-7);
-    -webkit-mask: var(--bar-keep), var(--edge-fade), var(--edge-left);
-    -webkit-mask-composite: source-over, source-in;
-    mask: var(--bar-keep), var(--edge-fade), var(--edge-left);
-    mask-composite: add, intersect;
-    --edge-fade: linear-gradient(transparent var(--top-h), #000 calc(var(--top-h) + var(--sp-4)), #000 calc(100% - var(--fade-end)), transparent);
-    --edge-left: linear-gradient(to right, transparent, #000 var(--sp-3));
+    /* Sharp at the top (the toolbar's veil is .stage::before), leaving over --fade-end at the bottom. */
+    -webkit-mask: var(--bar-keep), var(--edge-fade);
+    -webkit-mask-composite: source-over;
+    mask: var(--bar-keep), var(--edge-fade);
+    mask-composite: add;
+    --edge-fade: linear-gradient(#000 calc(100% - var(--fade-end)), transparent);
     box-sizing: border-box;
     container-type: inline-size;
   }
@@ -620,7 +640,25 @@
     /* The search and the path size to the toolbar's own width (its @container rules below). */
     container-type: inline-size;
   }
-  .history { display: flex; align-items: center; gap: 2px; flex: none; }
+  /* The toolbar floats on two glass capsules (--glass-panel over --glass-blur, no border), a little taller than a control.
+     In the right one the search field is a flat --ctl well. On glass the glyphs and text sit a step stronger. */
+  .top .cap {
+    display: flex; align-items: center; gap: var(--sp-0); min-width: 0;
+    height: calc(var(--ctl-h) + var(--sp-1)); padding: 0 var(--sp-0); box-sizing: border-box; border-radius: var(--r-3);
+    background: var(--glass-panel);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  }
+  .top .nav { flex: 0 1 auto; margin-right: auto; }
+  .top .nav .history .side-toggle { margin-right: var(--sp-2); }
+  .top .nav .crumbs { flex: 0 1 auto; margin-left: var(--sp-2); }
+  .top .tools { flex: none; }
+  .top .tools .find { background-color: var(--ctl); box-shadow: none; margin: 0 var(--sp-1) 0 calc(var(--sp-1) - var(--sp-0)); }
+  .top .cap button { color: var(--fg); }
+  .top .cap :is(.sep, .find, .find .kbd) { color: var(--fg-2); }
+  .top .cap .find input::placeholder { color: var(--fg-2); }
+  .top .tools .find:hover { background-color: var(--ctl-hover); background-image: none; }
+  .top .tools .find:focus-within { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent); }
+  .history { display: flex; align-items: center; gap: var(--sp-0); flex: none; }
   .history .side-toggle { margin-right: var(--sp-3); }
   .top button {
     display: grid;
@@ -638,16 +676,13 @@
   .top button.on { color: var(--fg); background: var(--active); }
   .top .tour-btn { flex: none; display: flex; gap: 6px; width: auto; padding: 0 var(--sp-2); font: inherit; font-weight: 500; transition: background var(--m-5) var(--ease), color var(--m-5) var(--ease); }
   .top .tour-btn:hover { background: var(--hover); color: var(--fg); transition-duration: var(--m-1); }
-  .top .discord-btn { flex: none; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 var(--sp-2); border-radius: var(--r-2); color: var(--fg-2); font-weight: 500; text-decoration: none; transition: background var(--m-5) var(--ease), color var(--m-5) var(--ease); }
-  .top .discord-btn:hover { background: var(--hover); color: var(--fg); transition-duration: var(--m-1); }
-  .top .discord-btn svg { width: 16px; height: 16px; fill: currentColor; stroke: none; }
-  @container (max-width: 560px) { .top .tour-btn span, .top .discord-btn span { display: none; } }
-  .crumbs { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; margin-left: var(--sp-2); }
-  .step { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 0 1 auto; }
+  @container (max-width: 560px) { .top .tour-btn span { display: none; } }
+  .crumbs { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-0); margin-left: var(--sp-2); }
+  .step { display: flex; align-items: center; gap: var(--sp-0); min-width: 0; flex: 0 1 auto; }
   .step:has(.crumb.ic) { flex-shrink: 999; }
-  .top .crumbs button { width: auto; display: flex; gap: 6px; padding: 0 var(--sp-2); font: inherit; font-weight: 500; white-space: nowrap; flex: none; }
+  .top .crumbs button { width: auto; display: flex; gap: var(--sp-2); padding: 0 var(--sp-2); font: inherit; font-weight: 500; white-space: nowrap; flex: none; }
   .top .crumbs .home { padding-left: 6px; }
-  .top .crumbs .home:not(:has(span)) { padding: 0 6px; }
+  .top .crumbs .home:not(:has(span)) { width: var(--ctl-h); padding: 0; justify-content: center; }
   .top .crumbs .crumb.ic { flex: 0 1 auto; min-width: 3ch; max-width: 22ch; display: block; overflow: hidden; text-overflow: ellipsis; }
   .top .home.on { background: none; color: var(--fg); font-weight: 600; }
   .top .home.on svg { fill: currentColor; }
@@ -665,10 +700,11 @@
     box-sizing: border-box;
     border-radius: var(--r-2);
     color: var(--fg-3);
+    background-color: var(--panel);
     box-shadow: inset 0 0 0 1px var(--border);
     transition: background var(--m-5) var(--ease), box-shadow var(--m-5) var(--ease), color var(--m-5) var(--ease);
   }
-  .find:hover { background: var(--hover); transition-duration: var(--m-1); }
+  .find:hover { background-image: linear-gradient(var(--hover), var(--hover)); transition-duration: var(--m-1); }
   .find:focus-within { color: var(--fg-2); background: var(--panel); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent); transition-duration: var(--m-2); }
   .find .kbd { transition: opacity var(--m-3) var(--ease); }
   .find:is(:focus-within, :has(input:not(:placeholder-shown))) .kbd { opacity: 0; }
@@ -694,11 +730,14 @@
   .no-lib:not(.gliding) .side { display: none; }
   .app.gliding { transition: grid-template-columns var(--m-4) var(--ease), background var(--m-7) var(--ease); }
   .gliding .side { overflow: hidden; }
-  .gliding .stage, .gliding .dock, .gliding .top { transition: margin-left var(--m-4) var(--ease), padding-left var(--m-4) var(--ease); }
+  .gliding .stage, .gliding .dock, .gliding .top { transition: margin-left var(--m-4) var(--ease), padding var(--m-4) var(--ease); }
   .gliding .resizer { display: none; }
   .with-lib.no-lib .stage { margin-left: var(--frame); }
   .no-lib .dock { margin-left: var(--frame); }
-  .no-lib .top { padding-left: 88px; }
+  /* Closed, the left capsule takes the traffic lights in (at 20–72px: it starts 8px before them, its content --sp-3
+     after), and the right one keeps the same 12px from the window's edge. */
+  .no-lib .top { padding-left: 12px; padding-right: 12px; }
+  .no-lib .top .nav { padding-left: calc(60px + var(--sp-3)); }
   .dock { grid-column: 2; grid-row: 3; min-width: 0; margin-right: var(--frame); container-type: inline-size; }
   .resizer { position: absolute; top: var(--top-h); bottom: var(--bar-h); left: calc(var(--lib-w) - 6px); width: 12px; z-index: 2; cursor: col-resize; }
   .resizer::after {

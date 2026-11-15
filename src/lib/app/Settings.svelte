@@ -164,7 +164,9 @@
   .sheet {
     position: absolute; z-index: 21; inset: calc(var(--top-h) + var(--sp-4)) var(--sp-4) auto; max-width: 600px; max-height: calc(100% - var(--top-h) - 2 * var(--sp-4));
     margin: 0 auto; display: flex; flex-direction: column; border-radius: var(--r-3);
-    background: var(--panel); color: var(--fg); box-shadow: 0 0 0 0.5px var(--border), var(--shadow); overflow: hidden; container-type: inline-size;
+    /* Glass, as the app's .sheet.glass: denser than the capsules, no border, only its shadow. */
+    background: var(--glass-sheet); color: var(--fg); box-shadow: var(--shadow); overflow: hidden; container-type: inline-size;
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   }
   .sheet:focus { outline: none; }
   .bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); height: calc(var(--ctl-h) + 2 * var(--sp-3)); padding: 0 var(--sp-3) 0 var(--gutter); }

@@ -107,6 +107,14 @@
   /** Uri of the row under the pointer (or focused): its long name glides to its end. */
   let pointed = $state<string | undefined>();
   let query = $state("");
+  // Folded sections (by key), remembered on this machine; a search or the icon-only view shows every section open.
+  const FOLDED = "lib-folded";
+  let folded = $state<string[]>((() => { try { return JSON.parse(localStorage.getItem(FOLDED) ?? "[]"); } catch { return []; } })());
+  function fold(f: string) {
+    folded = folded.includes(f) ? folded.filter((x) => x !== f) : [...folded, f];
+    try { localStorage.setItem(FOLDED, JSON.stringify(folded)); } catch {}
+  }
+  const shut = (f: string) => !mini && !query.trim() && folded.includes(f);
   let menu: HTMLElement;
   let filterBtn: HTMLElement;
   let searchEl = $state<HTMLInputElement>();
@@ -210,7 +218,8 @@
   function grab(e: PointerEvent, r: Row) {
     if (e.button !== 0 || filter || query.trim() || pinned.length < 2) return;
     const li = (e.currentTarget as HTMLElement).parentElement!;
-    drag = { uri: r.uri, y: e.clientY, dy: 0, moved: false, h: li.offsetHeight, order: pinned.map((p) => p.uri) };
+    // A step is a row and the gap under it.
+    drag = { uri: r.uri, y: e.clientY, dy: 0, moved: false, h: li.offsetHeight + parseFloat(getComputedStyle(li.parentElement!).rowGap || "0"), order: pinned.map((p) => p.uri) };
     const end = (ev: PointerEvent) => {
       removeEventListener("pointermove", move);
       removeEventListener("pointerup", end);
@@ -274,7 +283,7 @@
 
 <aside class="lib" class:mini class:compact={density === "compact"} class:spacious={density === "spacious"} aria-label={L.library.label}>
   <div class="panel">
-    <!-- One row: library search and a filter menu and refresh, like T3 Code's sidebar. -->
+    <!-- One row: library search and a filter menu, like T3 Code's sidebar. -->
     <header>
       <label class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>
@@ -283,9 +292,6 @@
       </label>
       <button class="icon filter ic" class:on={filter} aria-label={L.library.filterLabel} title={L.library.filter} popovertarget="lib-menu" disabled={!lib} bind:this={filterBtn}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" /></svg>
-      </button>
-      <button class="icon refresh ic" aria-label={L.library.refreshLabel} title={L.library.refresh} onclick={reload} disabled={!lib && !error}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" /></svg>
       </button>
     </header>
     <div id="lib-menu" class="menu" popover="manual" use:dismiss={() => filterBtn} bind:this={menu} role="menu" aria-label={L.library.filterLabel}>
@@ -352,8 +358,13 @@
         {#each sections as sec (sec.f)}
           <section aria-label={sec.label} class:quick={sec.f === "quick" || sec.f === "site" || sec.f === "legal"} class:site={sec.f === "site" || sec.f === "legal"}>
             <!-- Quick access (Home, Liked songs, Recently played) stands free at the top, without a label. -->
-            {#if sec.f !== "quick"}<h3 class="t-label" data-k="h:{sec.f}">{sec.label}</h3>{/if}
-            <ul>
+            {#if sec.f !== "quick"}
+              <h3 class="t-label" data-k="h:{sec.f}">
+                <button class="fold" aria-expanded={!shut(sec.f)} onclick={() => fold(sec.f)}>{sec.label}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
+              </h3>
+            {/if}
+            {#if !shut(sec.f)}
+            <ul in:enter={{ y: 0, collapse: true }} out:exit={{ y: 0, collapse: true }}>
               {#each sec.rows as r (r.uri)}
                 {@const on = r.uri === current || (r.kind === "artists" && artists.includes(r.uri))}
                 {@const sel = r.kind === "home" ? homeOn : r.uri === selected}
@@ -383,8 +394,8 @@
                         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2" /></svg>
                       </span>
                     {:else}
-                      <!-- The span keeps the grey placeholder while the image fades in over it. Hovered, the cover dims
-                           under the player's play/pause glyph (no disc); a click there plays or pauses instead of opening. -->
+                      <!-- The span keeps the grey placeholder while the image fades in over it. Hovered, the cover shows
+                           the raised accent play/pause disc (as on tiles); a click there plays or pauses instead of opening. -->
                       <span class="art" class:empty={!r.image} class:round={r.kind === "artists"}>
                         {#if r.image}<img src={r.image} alt="" width="48" height="48" loading="lazy" />
                         {:else}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>{/if}
@@ -419,6 +430,7 @@
                 </li>
               {/each}
             </ul>
+            {/if}
           </section>
         {:else}
           <p class="note">{query ? L.common.notFound : L.library.empty}</p>
@@ -448,11 +460,11 @@
   .lib { display: flex; flex-direction: column; min-height: 0; container-type: inline-size; }
 
   .panel { display: flex; flex-direction: column; min-height: 0; }
-  header { display: flex; align-items: center; gap: 2px; padding: 0 var(--sp-2) var(--sp-2); }
+  header { display: flex; align-items: center; gap: var(--sp-0); padding: 0 var(--sp-2) var(--sp-2); }
 
   /* The global .menu, anchored under the filter button. */
   .filter { anchor-name: --lib-filter; }
-  .menu { position-anchor: --lib-filter; top: calc(anchor(bottom) + 4px); left: anchor(left); width: 208px; transform-origin: top left; }
+  .menu { position-anchor: --lib-filter; top: calc(anchor(bottom) + var(--sp-1)); left: anchor(left); width: 208px; transform-origin: top left; }
   /* Rows like Select's (AGENTS.md): kind glyph, name, count in --fg-3, and an accent check at the right on the chosen
      one; no fill but the hover. */
   .menu .kind { flex: none; width: 16px; height: 16px; color: var(--fg-3); }
@@ -468,7 +480,7 @@
   .menu .check { flex: none; width: 14px; height: 14px; color: var(--accent); stroke-width: 2.25; visibility: hidden; }
   .menu [aria-checked="true"] .check { visibility: visible; }
 
-  button { font: inherit; color: inherit; border: none; background: none; cursor: default; padding: 0; }
+  button { font: inherit; color: inherit; border: none; background: none; padding: 0; }
   .icon { display: grid; place-items: center; width: var(--ctl-h); height: var(--ctl-h); border-radius: var(--r-2); color: var(--fg-3); }
   .icon.on { color: var(--accent); }
   .icon:disabled { opacity: 0.4; }
@@ -508,7 +520,16 @@
     mask: var(--bar-keep), linear-gradient(transparent, #000 var(--sp-3), #000 calc(100% - var(--sp-6)), transparent);
   }
   ul { list-style: none; margin: 0; padding: 0; }
+  /* Rows of a list stand --sp-0 apart (AGENTS.md › Spacing). */
+  .list ul { display: flex; flex-direction: column; gap: var(--sp-0); }
   h3 { padding: var(--sp-4) var(--sp-2) var(--sp-1); }
+  /* A section's label folds it: quiet until touched, the chevron shown when pointed at or folded (turned to the side). */
+  .fold { display: flex; align-items: center; gap: var(--sp-1); width: 100%; transition: color var(--m-2) var(--ease); }
+  .fold:is(:hover, :focus-visible) { color: var(--fg-2); }
+  .fold svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity var(--m-2) var(--ease), transform var(--m-3) var(--ease); }
+  .fold:is(:hover, :focus-visible) svg, .fold[aria-expanded="false"] svg { opacity: 1; }
+  .fold[aria-expanded="false"] svg { transform: rotate(-90deg); }
+  .mini .fold { display: none; }
   /* Quick access has no label, but keeps the room a label's top padding gave it under the search. */
   .quick:not(.site) { padding-top: var(--sp-4); }
   .mini .quick { padding-top: 0; }
@@ -532,18 +553,18 @@
   .art > img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
   .art { overflow: hidden; width: var(--lib-art); height: var(--lib-art); border-radius: var(--r-2); object-fit: cover; flex: none; background: var(--active); display: grid; place-items: center; color: var(--fg-3); outline: 0.5px solid color-mix(in srgb, var(--fg) 10%, transparent); outline-offset: -0.5px; transition: background var(--m-5) var(--ease), color var(--m-5) var(--ease); }
   .art.round { border-radius: 50%; }
-  /* The cover's play: a flat --on-cover-dim veil over the art (light in light, dark in dark) and the bare --accent glyph
-     on it, so it reads on any cover. Arrives with hover, leaves slower. */
+  /* The cover's play: the raised accent disc with an --on-accent glyph, centred on the art (the one cover play, as on
+     tiles; AGENTS.md "Design" 8). Arrives with hover, leaves slower. */
   .art { position: relative; }
-  .cue { position: absolute; inset: 0; display: grid; place-items: center; background: var(--on-cover-dim); color: var(--accent); opacity: 0; transition: opacity var(--m-5) var(--ease); }
-  .cue :global(svg.pp) { width: 44%; height: 44%; }
+  .cue { position: absolute; inset: 0; margin: auto; width: 60%; height: 60%; border-radius: 50%; display: grid; place-items: center; background: var(--raised); box-shadow: var(--raised-edge); color: var(--on-accent); opacity: 0; transition: opacity var(--m-5) var(--ease); }
+  .cue :global(svg.pp) { width: 50%; height: 50%; }
   .row:not(.lifted):is(:hover, :focus-visible) .cue { opacity: 1; transition-duration: var(--m-1); }
   .art svg { width: 36%; height: 36%; }
   /* No cover: a faint well with a small note, so placeholders recede behind real art. */
   .art.empty { background: color-mix(in srgb, var(--fg) 5%, transparent); color: color-mix(in srgb, var(--fg) 30%, transparent); }
   .liked { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
 
-  .text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .text { display: flex; flex-direction: column; gap: var(--sp-0); flex: 1; min-width: 0; }
   .name, .line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .name { font-size: var(--name-fs); font-weight: 500; color: var(--fg); line-height: 1.3; }
   .line { font-size: var(--sub-fs); color: var(--fg-3); line-height: 1.3; font-variant-numeric: tabular-nums; }
@@ -580,7 +601,7 @@
   /* Covers are centred under the traffic lights (x 20pt, 3 × 14pt + 2 × 6pt: centre ≈ 48pt measured, window points). */
   .mini { --mini-x: calc(48px / var(--zoom, 1) - 22px); }
   :global(html:not(.mac)) .mini { --mini-x: 20px; }
-  .mini h3 { width: 32px; height: 0; padding: 0; margin: 8px 6px; border-top: 1px solid var(--border); font-size: 0; }
+  .mini h3 { width: 32px; height: 0; padding: 0; margin: var(--sp-2); border-top: 1px solid var(--border); font-size: 0; }
   .mini section:first-child h3 { display: none; }
   .mini .list { padding: var(--sp-3) 0 var(--sp-6) var(--mini-x); scrollbar-width: none; }
   .mini .row { width: 44px; height: auto; padding: var(--sp-1) 0; }

@@ -19,6 +19,11 @@
   /* Flat neutral greys (AGENTS.md "Design"); the playing cover lights what plays. */
   --bg: #f4f4f5;
   --panel: #fff;
+  /* Glass (the app's AGENTS.md "Glass"): frosted, a see-through --panel over a backdrop blur, following the Transparency
+     setting closely on the toolbar's capsules (--glass-panel) and at half its range on sheets (--glass-sheet). */
+  --glass-panel: color-mix(in srgb, var(--panel) calc(15% + var(--glass-tint, 65%) * 0.85), transparent);
+  --glass-sheet: color-mix(in srgb, var(--panel) calc(50% + var(--glass-tint, 65%) * 0.5), transparent);
+  --glass-blur: blur(24px) saturate(1.6);
   /* Interaction states, shared by every row, card and ghost button (AGENTS.md "Interaction"). */
   --hover: color-mix(in srgb, var(--fg) 5%, transparent);
   --hover-edge: inset 0 0 0 0.5px color-mix(in srgb, var(--fg) 7%, transparent);
@@ -72,7 +77,7 @@
   --knob-on: var(--knob);
   /* The body's scroll fade at the bottom: content fades into the panel. Into white a long fade read as a glowing haze,
      into the dark panel as a shadow, so light mode fades over less (AGENTS.md "Design" 6). */
-  --fade-end: var(--sp-4);
+  --fade-end: var(--sp-3);
   --r-1: 4px;
   --r-2: 6px;
   --r-3: 10px;
@@ -97,7 +102,12 @@
   --micro-fs: 11px;
   --t-page: 26px;
   --t-section: 17px;
-  /* Spacing scale (4px base). Every gap, padding and margin uses a step; 2px only inside a text stack. */
+  --type-k: 1;
+  --font: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --leading: 1.45;
+  /* Spacing scale (4px base). Every gap, padding and margin uses a step; --sp-0 only between lines of a text stack,
+     rows of a list and icon buttons side by side. */
+  --sp-0: 2px;
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -118,6 +128,8 @@
   --tile-min: 150px;
   --card-min: 184px;
   --hero-title: 26px;
+  /* An artist page's banner strip: at most this tall. */
+  --banner-max: 440px;
   --play-h: 40px;
   /* The player row and its cover, times --player-k (Settings › Player › Size: 0.8 / 1 / 1.25). */
   --player-k: 1;
@@ -152,7 +164,7 @@ html.dark .lk {
     --sunk-edge: inset 0 1px 3px rgb(0 0 0 / 0.55), 0 0 0 0.5px var(--border-strong);
     --scrim: rgb(0 0 0 / 0.6);
     --knob: var(--fg);
-    --fade-end: var(--sp-6);
+    --fade-end: var(--sp-4);
 }
 /* Dark accent: the chosen colour's OKLCH lightness mirrored (1 − L, shifted to the dark panel), hue and chroma kept;
    its text the panel colour, as under a tinted accent. Old webviews without relative colour keep the light value. */
@@ -198,6 +210,7 @@ html.dark .lk {
   --tile-min: 112px;
   --card-min: 140px;
   --hero-title: 22px;
+  --banner-max: 280px;
   --bar-h: calc(68px * var(--player-k));
   --player-cover: calc(44px * var(--player-k));
   --ctl-h: 24px;
@@ -209,7 +222,7 @@ html.dark .lk {
 }
 .lk {
   margin: 0;
-  font: var(--fs)/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font: var(--fs)/var(--leading) var(--font);
   -webkit-font-smoothing: antialiased;
   -webkit-user-select: none;
   user-select: none;
@@ -344,13 +357,14 @@ html.dark .lk {
   border-radius: var(--r-3);
   background: var(--panel);
   color: var(--fg);
-  box-shadow: 0 0 0 0.5px var(--border-strong), var(--shadow);
+  box-shadow: var(--shadow);
   transition: opacity var(--m-2) var(--ease), transform var(--m-2) var(--ease), overlay var(--m-2) allow-discrete, display var(--m-2) allow-discrete;
 }
 :where(.lk) .menu:popover-open { opacity: 1; transform: none; }
 @starting-style { :where(.lk) .menu:popover-open { opacity: 0; transform: scale(0.97) translateY(-2px); } }
 :where(.lk) .menu:not(:popover-open) { opacity: 0; }
 :where(.lk) .menu button { display: flex; align-items: center; gap: var(--sp-3); width: 100%; height: var(--row-h); padding: 0 var(--sp-2); box-sizing: border-box; border: none; border-radius: var(--r-2); background: none; color: var(--fg-2); font: inherit; font-size: var(--fs); text-align: left; white-space: nowrap; cursor: default; }
+:where(.lk) .menu button + button { margin-top: var(--sp-0); }
 :where(.lk) .menu button:hover { color: var(--fg); }
 :where(.lk) .menu [aria-checked="true"], :where(.lk) .menu [aria-selected="true"] { color: var(--fg); font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { :where(.lk) .menu { transition: none; } }
@@ -515,3 +529,16 @@ html.menu-open .lk .menu:popover-open { pointer-events: auto; }
 .lk :focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
 html.pointer .lk :focus-visible { outline: none !important; }
 :root { --motion: 200ms; }
+
+/* The app's reading sheet (About the artist): a modal <dialog> on glass, narrower, as tall as its text. */
+:where(.lk) .sheet.small {
+  position: fixed;
+  inset: calc(var(--top-h) + var(--dy, 0px)) var(--sp-6) calc(var(--sp-6) - var(--dy, 0px));
+  width: auto; max-width: 560px; height: fit-content; max-height: 780px; margin: auto; padding: 0;
+  display: flex; flex-direction: column;
+  border: none; border-radius: var(--r-3); color: var(--fg); overflow: hidden; container-type: inline-size;
+  background: var(--glass-sheet); box-shadow: var(--shadow);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+:where(.lk) .sheet:focus { outline: none; }
+:where(.lk) .sheet::backdrop { background: var(--scrim); opacity: var(--t, 1); }

@@ -59,6 +59,8 @@ export const LIKED = "spotify:user:demo:collection";
 
 const al = (id: string) => albums.find((a) => a.id === id)!;
 
+// In the catalog, not followed: they show on Home and in search, not in the library.
+const UNFOLLOWED = ["Rudimental", "Camo & Krooked", "Kendrick Lamar", "Travis Scott", "J. Cole", "Eminem", "Central Cee", "Dave", "Doja Cat", "Post Malone", "Chappell Roan", "Dua Lipa"];
 const NEW = ["Luca Brassi10x", "Separ", "Pil C", "Scarlxrd", "Unaverage Gang", "Bring Me The Horizon"];
 export const lib: Lib = {
   liked: { uri: LIKED, count: likedTracks.length, uris: likedTracks.map((t) => t.uri) },
@@ -66,7 +68,7 @@ export const lib: Lib = {
   // A few albums only: the library is mostly playlists.
   albums: ["redzed-junkie", "pil-c", "chase-status", "scarlxrd", "bring-me-the-horizon"].map((id) => item(al(id))),
   // The newest follows first (the "Recently added" order).
-  artists: names.filter((n) => albums.some((a) => a.by === n && !a.single)).sort((a, b) => +NEW.includes(b) - +NEW.includes(a)).map(artistItem),
+  artists: names.filter((n) => !UNFOLLOWED.includes(n) && albums.some((a) => a.by === n && !a.single)).sort((a, b) => +NEW.includes(b) - +NEW.includes(a)).map(artistItem),
 };
 
 type Card = LibItem & { kind: "playlists" | "albums" | "artists" };
@@ -111,7 +113,7 @@ export function itemData(uri: string): { tracks: Track[]; info: Info } {
   return {
     tracks: own.flatMap((x) => listOf(x)).slice(0, 10),
     info: {
-      image: artistArt.get(n), bio: null, genres: [artistOf(n).genre!],
+      image: artistArt.get(n), banner: null, bio: null, genres: [artistOf(n).genre!],
       sections: [
         { key: "albums", title: "Albums", rows: own.map(row) },
         { key: "related", title: "Fans also like", rows: of(artistOf(n).genre!).filter((x) => x !== n).slice(0, 6).map((x) => ({ ...artistItem(x), kind: "artists", line: "Artist" })) },

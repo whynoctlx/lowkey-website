@@ -73,7 +73,7 @@
   .tile:has(.open:focus-visible) { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
   .name { color: var(--fg); overflow: hidden; font-size: var(--fs); font-weight: 500; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
   .now .name { color: var(--now); }
-  .quiet .open { gap: 2px; }
+  .quiet .open { gap: var(--sp-0); }
   .desc { color: var(--fg-3); font-size: var(--meta-fs); line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   .glide .desc { display: block; }
 </style>

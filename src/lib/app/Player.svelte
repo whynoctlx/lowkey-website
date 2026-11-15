@@ -376,7 +376,7 @@
   .cover-open:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; }
   .cover-empty { display: grid; place-items: center; background: color-mix(in srgb, var(--fg) 5%, transparent); color: var(--fg-3); }
   .cover-empty svg { width: 40%; height: 40%; }
-  .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-0); }
   .title-row { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
   .title-row .title { flex: 0 1 auto; min-width: 0; }
   .title, .artist, .album { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.3; }
@@ -399,20 +399,19 @@
   .large :is(.album, .time) { font-size: var(--sub-fs); }
 
   /* Centre: the transport over the progress, one instrument. */
-  .center { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; }
+  .center { display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-0); min-width: 0; }
   .transport { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); }
   .progress { display: flex; align-items: center; gap: var(--sp-2); }
   /* Elapsed is the live number (--fg-2), the length its quiet reference (--fg-3). */
   .time { flex: none; min-width: 4.5ch; font-size: var(--small-fs); color: var(--fg-3); font-variant-numeric: tabular-nums; }
   .time.pos { text-align: right; color: var(--fg-2); }
 
-  button:where(:not(.link)) {
+  button:where(:not(.link, .like)) {
     display: grid;
     place-items: center;
     border: none;
     background: none;
     color: var(--fg-2);
-    cursor: default;
     padding: 0;
     position: relative;
     border-radius: var(--r-2);
@@ -497,7 +496,7 @@
     left: clamp(14px, calc(var(--hov, 0) * 100%), calc(100% - 14px));
     transform: translate(-50%, 2px) scale(0.96);
     transform-origin: 50% 100%;
-    padding: 2px var(--sp-1);
+    padding: var(--sp-0) var(--sp-1);
     border-radius: var(--r-1);
     background: var(--panel);
     box-shadow: 0 0 0 0.5px var(--border-strong), var(--shadow);

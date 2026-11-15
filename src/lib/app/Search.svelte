@@ -128,7 +128,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(4, auto);
     grid-auto-flow: column;
-    gap: 2px var(--sp-5);
+    gap: var(--sp-0) var(--sp-5);
     margin: 0 calc(-1 * var(--sp-2));
   }
   .track {
@@ -143,7 +143,7 @@
   .cover { display: grid; place-items: center; width: var(--thumb); height: var(--thumb); border-radius: var(--r-2); background: var(--active); --disc: 28px; }
   .cover img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
   .cover img { outline: 0.5px solid color-mix(in srgb, var(--fg) 10%, transparent); outline-offset: -0.5px; }
-  .text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .text { display: flex; flex-direction: column; gap: var(--sp-0); min-width: 0; }
   .name, .sub { white-space: nowrap; line-height: 1.3; }
   .name { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; font-size: var(--name-fs); font-weight: 500; color: var(--fg); }
   .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

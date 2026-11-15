@@ -129,7 +129,7 @@
   .pic.liked { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); outline: none; }
   .pic.liked svg { width: 42%; height: 42%; stroke-width: 2; stroke-linejoin: round; }
   .act.on .pic.liked svg { fill: currentColor; }
-  .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-0); }
   .name, .line { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.3; }
   .name { font-size: var(--fs); font-weight: 500; color: var(--fg); }
   .line { font-size: var(--meta-fs); font-weight: 400; color: var(--fg-3); font-variant-numeric: tabular-nums; }
