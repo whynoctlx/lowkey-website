@@ -18,11 +18,19 @@
   --bar-keep: linear-gradient(#000 0 0) right / var(--bar-w) 100% no-repeat;
   /* Flat neutral greys (AGENTS.md "Design"); the playing cover lights what plays. */
   --bg: #f4f4f5;
-  --panel: #fff;
+  --panel-0: #fff;
+  --panel: var(--panel-0);
+  /* The body's own ground: the panel. */
+  --ground: var(--panel);
+  /* An item's hero rises out of its own cover's colour (--hero-h/--hero-s on the page), this strong at the top. */
+  --hero-wash: 26%;
+  /* The Transparency setting's opacity (--glass-tint), mirrored for the mode: light takes it --glass-k times over. */
+  --glass-k: 1.6;
+  --glass-o: clamp(0%, calc(100% - (100% - var(--glass-tint, 65%)) * var(--glass-k)), 100%);
   /* Glass (the app's AGENTS.md "Glass"): frosted, a see-through --panel over a backdrop blur, following the Transparency
      setting closely on the toolbar's capsules (--glass-panel) and at half its range on sheets (--glass-sheet). */
-  --glass-panel: color-mix(in srgb, var(--panel) calc(15% + var(--glass-tint, 65%) * 0.85), transparent);
-  --glass-sheet: color-mix(in srgb, var(--panel) calc(50% + var(--glass-tint, 65%) * 0.5), transparent);
+  --glass-panel: color-mix(in srgb, var(--glass-ground) calc(15% + var(--glass-o) * 0.85), transparent);
+  --glass-sheet: color-mix(in srgb, var(--glass-ground) calc(50% + var(--glass-tint, 65%) * 0.5), transparent);
   --glass-blur: blur(24px) saturate(1.6);
   /* Interaction states, shared by every row, card and ghost button (AGENTS.md "Interaction"). */
   --hover: color-mix(in srgb, var(--fg) 5%, transparent);
@@ -52,6 +60,9 @@
   --now-l: 42%;
   /* The faint wash of the cover on the window; none without a tint. */
   --wash: transparent;
+  /* The glass's own colour: the panel washed with the playing colour (--wash-hue). */
+  --wash-hue: var(--panel);
+  --glass-ground: color-mix(in srgb, var(--wash-hue) 8%, var(--panel));
   --danger: #d93f3f;
   /* Only floating layers (dialogs, popovers) cast a shadow. */
   --shadow: 0 8px 24px -8px rgb(0 0 0 / 0.16);
@@ -61,10 +72,10 @@
      only its glyph or label in --accent. */
   --raised: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff), var(--accent) 58%, color-mix(in srgb, var(--accent) 90%, #000));
   --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.14), 0 0 0 0.5px color-mix(in srgb, var(--accent) 70%, #000), 0 1px 2px rgb(0 0 0 / 0.14), 0 4px 10px -4px rgb(0 0 0 / 0.28);
-  --raised-n: linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--fg) 5%, var(--panel)));
+  --raised-n: linear-gradient(180deg, transparent, color-mix(in srgb, var(--fg) 5%, transparent)), var(--glass-panel);
   --raised-n-edge: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 0.5px var(--border-strong), 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 10px -4px rgb(0 0 0 / 0.16);
-  --sunk: color-mix(in srgb, var(--fg) 7%, var(--panel));
-  --sunk-edge: inset 0 1px 3px rgb(0 0 0 / 0.14), 0 0 0 0.5px var(--border-strong);
+  --sunk: linear-gradient(color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent) 16%, transparent)), var(--glass-panel);
+  --sunk-edge: none;
   /* The dim behind a modal sheet; stronger in dark so it reads the same (AGENTS.md "Design" 6). */
   --scrim: rgb(0 0 0 / 0.32);
   /* The flat veil over a cover photo under the sidebar's --accent play glyph: the panel's tone, so it lightens a cover
@@ -135,6 +146,9 @@
   --player-k: 1;
   --bar-h: calc(84px * var(--player-k));
   --player-cover: calc(56px * var(--player-k));
+  /* The floating player's "now" part (cover and names) at its widest. */
+  --float-now: calc(400px * var(--player-k));
+  --pick-w: 240px;
   /* Control height: buttons, fields, segmented controls, menu rows; settings rows. */
   --ctl-h: 28px;
   --set-row: 48px;
@@ -147,7 +161,9 @@
 html.dark .lk {
     color-scheme: dark;
     --bg: #0b0b0c;
-    --panel: #141416;
+    --panel-0: #141416;
+    --glass-k: 1;
+    --hero-wash: 32%;
     --border-0: #232327;
     --border-strong-0: #323238;
     --fg: #ededef;
@@ -158,10 +174,8 @@ html.dark .lk {
     --danger: #f06565;
     --shadow: 0 8px 24px -8px rgb(0 0 0 / 0.6);
     --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.24), inset 0 -1px 0 rgb(0 0 0 / 0.3), 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.5), 0 4px 10px -4px rgb(0 0 0 / 0.75);
-    --raised-n: linear-gradient(180deg, color-mix(in srgb, var(--fg) 12%, var(--panel)), color-mix(in srgb, var(--fg) 6%, var(--panel)));
+    --raised-n: linear-gradient(180deg, color-mix(in srgb, var(--fg) 12%, transparent), color-mix(in srgb, var(--fg) 6%, transparent)), var(--glass-panel);
     --raised-n-edge: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 0.5px rgb(0 0 0 / 0.6), 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 10px -4px rgb(0 0 0 / 0.65);
-    --sunk: color-mix(in srgb, #000 30%, var(--panel));
-    --sunk-edge: inset 0 1px 3px rgb(0 0 0 / 0.55), 0 0 0 0.5px var(--border-strong);
     --scrim: rgb(0 0 0 / 0.6);
     --knob: var(--fg);
     --fade-end: var(--sp-4);
@@ -176,7 +190,7 @@ html.dark .lk {
 /* From cover while nothing coloured plays (nothing yet, or a grey cover): neutral, the theme's own text colour,
    so the accent never falls back to a hue the user didn't pick for this mode. */
 /* Color tint: the glass takes a faint wash of the playing colour (the cover's or the chosen one); off, it stays neutral. */
-.lk { --wash: var(--now); }
+.lk { --wash: var(--now); --wash-hue: var(--now); }
 /* Unfocused window, like native apps: the accent and the cover's light grey out, secondary chrome recedes. */
 /* Density is per component (AGENTS.md "Density"): .compact on a component's root swaps these for its subtree. */
 /* Spacious, compact's opposite: larger type, rows and covers for the subtree; spacing stays. */
@@ -231,7 +245,16 @@ html.dark .lk {
   color: var(--fg);
 }
 /* Sidebar and player sit on frosted glass: the native vibrancy under a tint whose strength is a setting. */
-.lk { --chrome: color-mix(in srgb, var(--bg) var(--glass-tint, 65%), transparent); }
+.lk { --chrome: color-mix(in srgb, var(--bg) var(--glass-o), transparent); }
+/* Page background "Glass", as the app's html.vibrancy.ground-glass: the body on the window's glass under a light veil of
+   the panel (25% plus 45% of the glass opacity); hairlines turn see-through --fg so they hold over any backdrop. */
+.lk, html.dark .lk {
+  --ground: color-mix(in srgb, var(--panel) calc(25% + var(--glass-o) * 0.45), transparent);
+  --border-0: color-mix(in srgb, var(--fg) 11%, transparent);
+  --border-strong-0: color-mix(in srgb, var(--fg) 18%, transparent);
+}
+/* On the web the clickable things take the pointer (the app keeps macOS's arrow). Beats the scoped cursor: default. */
+.lk :is(a[href], button:not(:disabled), select, summary, [role="button"], [role="option"], label:has(input:not([type="text"], [type="search"])), input:is([type="checkbox"], [type="radio"], [type="range"]), .track.hl, .cue, .pin) { cursor: pointer; }
 /* Type roles (see AGENTS.md): use these classes for headings instead of local font rules. */
 :where(.lk) .t-page { margin: 0; font-size: var(--t-page); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
 :where(.lk) .t-section { margin: 0; font-size: var(--t-section); font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
@@ -239,6 +262,7 @@ html.dark .lk {
 :where(.lk) .t-label { margin: 0; font-size: var(--meta-fs); font-weight: 600; line-height: 1.3; color: var(--fg-3); }
 /* Interaction (see AGENTS.md): one hover surface and one glyph swap for the whole app. Components add the
    classes; they don't restyle the states locally. Hover arrives in 80 ms and leaves over 280 ms. */
+:where(.lk) .ignored { opacity: 0.4; }
 :where(.lk) .hl { transition: background var(--m-5) var(--ease), box-shadow var(--m-5) var(--ease); }
 :where(.lk) .hl:hover, :where(.lk) .hl:has(:focus-visible) { background: var(--hover); box-shadow: var(--hover-edge); transition-duration: var(--m-1); }
 :where(html:not(.alt-press)) .lk .hl:active { background: var(--press); }
@@ -252,6 +276,7 @@ html.dark .lk {
 :where(.lk) .hl .swap-in { opacity: 0; transform: scale(0.6); }
 :where(.lk) .hl:is(:hover, :has(:focus-visible)) .swap-out { opacity: 0; transform: scale(0.6); }
 :where(.lk) .hl:is(:hover, :has(:focus-visible)) .swap-in { opacity: 1; transform: none; }
+:where(.lk) .hl .swap-in.like.on { opacity: 1; transform: none; }
 /* The playing track row (.hl.now): an accent tint with its own hover step and an accent name. */
 :where(.lk) .hl.now { background: color-mix(in srgb, var(--now) 10%, transparent); }
 :where(.lk) .hl.now:is(:hover, :has(:focus-visible)) {
@@ -276,11 +301,9 @@ html.dark .lk {
 :where(.lk) .hl.bare .veil { overflow: clip; }
 :where(.lk) .hl.bare .veil::after { display: none; }
 :where(.lk) .hl.bare .veil > img {
-  transition: transform var(--m-6) var(--ease);
   /* A hairline over the art, so white covers keep their edge on a light panel. */
   outline: 0.5px solid color-mix(in srgb, var(--fg) 10%, transparent); outline-offset: -0.5px;
 }
-:where(.lk) .hl.bare:is(:hover, :has(:focus-visible)) .veil > img { transform: scale(1.04); transition-duration: var(--m-7); }
 /* The corner disc: the raised accent play disc (clickable, AGENTS.md "Design" 1, 2) in the cover's bottom-right corner; on
    a playing tile the same disc stays put with the equaliser on it, and pointed at, the bars give way to the pause. The play rises in with the tile (from a step lower and 0.85) and leaves faster than
    it came; under the pointer it swells a little, pressed it dips. Round (artist) covers move it in along the diagonal (--disc-at). */
@@ -300,11 +323,10 @@ html.dark .lk {
   opacity: 1; transform: none;
   transition: opacity var(--m-3) var(--ease), transform var(--m-5) var(--ease), scale var(--m-3) var(--ease);
 }
-:where(.lk) .hl.bare .veil > button.cover-play:hover { scale: 1.08; }
 :where(html:not(.alt-press)) .lk .hl.bare .veil > button.cover-play:active { scale: 0.94; transition-duration: var(--m-1); }
 :where(.lk) .hl.bare .veil > button.cover-play svg { width: calc(var(--disc) * 0.4); height: calc(var(--disc) * 0.4); }
 /* A keyboard shortcut (.kbd): quiet --fg-3 keys, no box, the size of the explicit mark's type. */
-:where(.lk) .kbd { flex: none; display: inline-flex; align-items: center; height: 18px; padding: 0 var(--sp-1); border-radius: var(--r-1); color: var(--fg-3); font: inherit; font-size: var(--micro-fs); font-weight: 500; line-height: 1; letter-spacing: 0.02em; white-space: nowrap; pointer-events: none; }
+:where(.lk) .kbd { flex: none; display: inline-flex; align-items: center; height: 18px; padding: 0 var(--sp-1); border-radius: var(--r-1); background: var(--ctl); color: var(--fg-3); font: inherit; font-size: var(--micro-fs); font-weight: 500; line-height: 1; letter-spacing: 0.02em; white-space: nowrap; pointer-events: none; }
 /* Explicit mark: a small "E" on a flat --fg tint (track rows, player); a fill, not a hairline, so it reads on glass too. */
 /* The name, said as it reads: "low" in --fg, "key" in --fg-3 (sidebar, About). */
 :where(.lk) .wordmark { letter-spacing: -0.02em; }
@@ -315,8 +337,8 @@ html.dark .lk {
    (--gap-x, up to --sp-5), then the tiles (--tile). A new count waits until a resize stops; until then a narrowing grid
    is clipped and fades out at its right edge (data-squeezed), then its tiles glide to their places once.
    Tiles pull back by their own --sp-2 inset. */
-:where(.lk) .tiles { display: grid; grid-template-columns: repeat(var(--cols, auto-fill), var(--tile, var(--tile-min))); position: relative; gap: var(--sp-3) var(--gap-x, var(--sp-2)); align-items: start; margin: 0 calc(-1 * var(--sp-2)); padding: 0; list-style: none; overflow-x: clip; }
-:where(.lk) .tiles[data-squeezed] { mask-image: linear-gradient(to left, transparent, #000 var(--sp-6)); }
+:where(.lk) .tiles[style*="--cols"] { grid-template-columns: repeat(var(--cols), var(--tile)); overflow-x: clip; }
+:where(.lk) .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(calc(var(--tile-min) * var(--tile-k, 1)), 100%), 1fr)); gap: var(--sp-3); align-items: start; margin: 0 calc(-1 * var(--sp-2)); padding: 0; list-style: none; }
 /* A row cover (.veil): the art stays sharp. On hover its play is a small accent disc (the shelf card play in small) and the playing row
    keeps a panel veil under the accent equaliser, steady, so nothing flashes while the pointer moves over rows. */
 :where(.lk) .veil { position: relative; }
@@ -355,7 +377,8 @@ html.dark .lk {
   padding: var(--sp-1);
   border: none;
   border-radius: var(--r-3);
-  background: var(--panel);
+  background: var(--glass-sheet);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   color: var(--fg);
   box-shadow: var(--shadow);
   transition: opacity var(--m-2) var(--ease), transform var(--m-2) var(--ease), overlay var(--m-2) allow-discrete, display var(--m-2) allow-discrete;
@@ -425,7 +448,7 @@ html.menu-open .lk .menu:popover-open { pointer-events: auto; }
    over it (opacity only, under the glyph or words); pressed, it sinks a pixel and gives way a step. */
 :where(.lk) :is(.raised, .raised-n) { position: relative; isolation: isolate; border: 0; transition: transform var(--m-3) var(--ease); }
 :where(.lk) .raised { background: var(--raised); box-shadow: var(--raised-edge); color: var(--on-accent); }
-:where(.lk) .raised-n { background: var(--raised-n); box-shadow: var(--raised-n-edge); color: var(--fg-2); }
+:where(.lk) .raised-n { background: var(--raised-n); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: var(--raised-n-edge); color: var(--fg-2); }
 :where(.lk) .raised-n.on { background: var(--sunk); box-shadow: var(--sunk-edge); color: var(--accent); }
 :where(.lk) :is(.raised, .raised-n)::after {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
@@ -467,7 +490,7 @@ html.menu-open .lk .menu:popover-open { pointer-events: auto; }
 }
 :where(.lk) .row-glyph svg { width: 60%; height: 60%; }
 :where(.lk) .hl .row-glyph.swap-in { transition: opacity var(--m-3) var(--ease), transform var(--m-3) var(--ease), scale var(--m-2) var(--ease), color var(--m-2) var(--ease); }
-:where(.lk) .hl .row-glyph.swap-in:hover { scale: 1.12; color: var(--fg); }
+:where(.lk) .hl .row-glyph.swap-in:hover { color: var(--fg); }
 :where(.lk) .hl .row-glyph.swap-in:active { scale: 0.9; }
 :where(.lk) .hl.now .row-glyph { color: var(--now); }
 /* A name that opens something (an artist in the player or a track row): plain text until pointed at. */

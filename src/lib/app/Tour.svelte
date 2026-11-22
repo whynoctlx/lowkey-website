@@ -4,7 +4,7 @@
 <script lang="ts" module>
   /** A stop: what to light (a selector inside the window; none: the card alone, centred), and what to do first.
    *  `did`: something the tip's action changes; once it differs from when the stop opened, the tip shows done and the tour moves on. */
-  export type Stop = { at?: string; title: string; text: string; tip?: string; go?: () => void; did?: () => unknown };
+  export type Stop = { at?: string; title: string; text: string; tip?: string; go?: () => void; did?: () => unknown; /** Does the tip's action for the visitor (a Try it button). */ try?: () => void };
 </script>
 
 <script lang="ts">
@@ -107,12 +107,12 @@
       <p class="tip" class:done={did[i]}>
         {#if did[i]}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
         {:else}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" /></svg>{/if}
-        <span>{stop.tip}</span>{#if did[i]}<b aria-live="polite">Done</b>{/if}
+        <span>{stop.tip}</span>{#if did[i]}<b aria-live="polite">Done</b>{:else if stop.try}<button class="try" onclick={stop.try}>Try it</button>{/if}
       </p>
     {/if}
     <div class="row">
       <span class="dots" aria-hidden="true">{#each stops as _, n}<i class:on={n === i} class:did={did[n]}></i>{/each}</span>
-      {#if i}<button class="raised-n" onclick={() => to(i - 1)}>Back</button>{:else}<button class="skip" onclick={() => done(false)}>Skip</button>{/if}
+      {#if last}<button class="raised-n" onclick={() => done(false)}>Close</button>{:else if i}<button class="raised-n" onclick={() => to(i - 1)}>Back</button>{:else}<button class="skip" onclick={() => done(false)}>Skip</button>{/if}
       {#if last}
         <button class="raised" bind:this={next} onclick={() => done(true)}>Download</button>
       {:else}
@@ -136,7 +136,9 @@
     box-sizing: border-box;
     padding: 24px 26px 22px;
     border-radius: 16px;
-    background: var(--panel);
+    /* Glass, as the app's sheets: the sheets' denser kind, over the lit window. */
+    background: var(--glass-sheet);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
     box-shadow: var(--shadow), 0 0 0 0.5px var(--border-strong);
     color: var(--fg);
     pointer-events: auto;
@@ -150,6 +152,8 @@
   .tip.done { background: color-mix(in srgb, var(--accent) 20%, transparent); }
   .tip.done svg { stroke-width: 2.6; }
   .tip b { margin-left: auto; padding-left: 8px; color: var(--accent); font-weight: 650; white-space: nowrap; }
+  .try { flex: none; align-self: center; margin-left: auto; height: 26px; padding: 0 12px; border: 0; border-radius: 13px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: default; }
+  .try:hover { background: color-mix(in srgb, var(--accent) 88%, var(--fg)); }
   .row { display: flex; align-items: center; gap: 8px; margin-top: 22px; }
   .dots { display: flex; gap: 6px; margin-right: auto; }
   .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); transition: background var(--m-3) var(--ease), width var(--m-3) var(--ease); }

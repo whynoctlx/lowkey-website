@@ -51,7 +51,7 @@ const names = [...new Set(albums.map((a) => a.by))];
 const artistOf = (n: string) => albums.find((x) => x.by === n)!;
 const artistArt = new Map(names.map((n) => [n, artistOf(n).artistImage]));
 
-const item = (a: Album): LibItem => ({ uri: uriOf(a), name: a.name, image: coverOf(a), sub: a.desc ?? allBy(a).join(", "), count: a.tracks.length, editable: a.by === "You" });
+const item = (a: Album): LibItem => ({ uri: uriOf(a), name: a.name, image: coverOf(a), sub: a.desc ?? allBy(a).join(", "), count: a.tracks.length, editable: a.by === "You", own: a.by === "You" });
 const artistItem = (n: string): LibItem => ({ uri: artistUri(n), name: n, image: artistArt.get(n) });
 
 const likedTracks = [...tracks.values()].filter((_, i) => i % 3 === 0).map((t, i) => ({ ...t, added_at: Date.now() - i * 86400e3 * 2 }));
@@ -129,6 +129,13 @@ export function queueOf(uri: string): Track[] {
     return itemData(t.album_uri!).tracks;
   }
   return itemData(uri).tracks;
+}
+
+/** Real Spotify links the demo pretends to open (the tour's Try it), to the demo album they stand for. */
+const LINKED: Record<string, string> = { "spotify:album:4eLPsYPBmXABThSJ821sqY": "DAMN." };
+export function linkRow(uri: string): Row | null {
+  const a = albums.find((x) => x.kind === "Album" && x.name === LINKED[uri]);
+  return a ? { ...item(a), kind: "albums", line: `Album · ${a.year}` } : null;
 }
 
 export function search(q: string): Results {

@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  export type LibItem = { uri: string; name: string; image?: string | null; sub?: string; count?: number; /** Songs can be added (own or collaborative playlist). */ editable?: boolean };
+  export type LibItem = { uri: string; name: string; image?: string | null; sub?: string; count?: number; /** Songs can be added (own or collaborative playlist). */ editable?: boolean; /** The user's own playlist. */ own?: boolean; /** An album card's artist uris, its own first (Home). */ artists?: string[] };
   export type Lib = {
     /** `uris`: the liked songs (missing in a cache from an older build). */
     liked: { uri: string; count: number; uris?: string[] };
@@ -7,8 +7,9 @@
     albums: LibItem[];
     artists: LibItem[];
   };
-  /** The sidebar's order (Sort by): Spotify's own (newest saved first), last played here, by name, by creator. */
-  export type LibSort = "added" | "played" | "name" | "creator";
+  /** The sidebar's order (Sort by): Spotify's own (newest saved first), last played here, by name, by creator, or as
+   *  dragged (custom; dragging a row of Playlists, Albums or Artists picks it). */
+  export type LibSort = "added" | "played" | "name" | "creator" | "custom";
   export type Density = "compact" | "regular" | "spacious";
   export const DENSITIES: Density[] = ["compact", "regular", "spacious"];
   export type Row = LibItem & { kind: "playlists" | "albums" | "artists" | "liked" | "recent" | "home" | "site"; line: string; icon?: string };
@@ -17,16 +18,17 @@
 
 <script lang="ts">
   import { L } from "./i18n";
-  import { enter, exit, glides, reorders, settle } from "./motion.svelte";
+  import { remember } from "./settings";
+  import { enter, exit, flips, glides, reorders, settle } from "./motion.svelte";
   import { dismiss } from "./menu";
-  import { flushSync } from "svelte";
+  import { flushSync, tick, untrack } from "svelte";
   import PlayIcon from "./PlayIcon.svelte";
   import Marquee from "./Marquee.svelte";
   let {
     lib,
     error,
     current,
-    artists = [],
+    holds = [],
     playing = false,
     selected,
     open,
@@ -47,6 +49,10 @@
     setDensity,
     showRecent = true,
     setShowRecent,
+    splitOwn = true,
+    setSplitOwn,
+    orders = {},
+    setOrders,
     kbd = "",
     site = [],
     legal = [],
@@ -55,8 +61,8 @@
     error: string;
     /** Uri of the playing context, highlighted in the list. */
     current?: string;
-    /** Artist uris of the playing track: their library rows are marked as playing too. */
-    artists?: string[];
+    /** Uris of the rows marked as playing (the page picks one tier: playlists, artists, Liked songs, the source). */
+    holds?: string[];
     /** Whether that context is playing (the equaliser bounces) or paused (it holds still). */
     playing?: boolean;
     /** Uri of the item open on the main screen. */
@@ -89,6 +95,13 @@
     /** Recently played in Quick access (the filter menu and Settings › Sidebar). */
     showRecent?: boolean;
     setShowRecent: (on: boolean) => void;
+    /** Your playlists as their own section under Pinned, reordered by dragging; off, they stay among Playlists. */
+    splitOwn?: boolean;
+    setSplitOwn: (on: boolean) => void;
+    /** Each section's dragged order (uris, by section key). Quick access and Your playlists always keep theirs;
+     *  Playlists, Albums and Artists under the Custom sort. */
+    orders?: Record<string, string[]>;
+    setOrders: (orders: Record<string, string[]>) => void;
     /** The search field's shortcut, shown at its right end. */
     kbd?: string;
     /** The website's own pages (Lowkey's demo): a labelled section of icon rows under Quick access. */
@@ -112,18 +125,17 @@
   let folded = $state<string[]>((() => { try { return JSON.parse(localStorage.getItem(FOLDED) ?? "[]"); } catch { return []; } })());
   function fold(f: string) {
     folded = folded.includes(f) ? folded.filter((x) => x !== f) : [...folded, f];
-    try { localStorage.setItem(FOLDED, JSON.stringify(folded)); } catch {}
+    remember(FOLDED, JSON.stringify(folded));
   }
-  const shut = (f: string) => !mini && !query.trim() && folded.includes(f);
+  const shut = (f: string) => f !== "pinned" && !mini && !query.trim() && folded.includes(f);
   let menu: HTMLElement;
   let filterBtn: HTMLElement;
   let searchEl = $state<HTMLInputElement>();
   /** The sidebar's search shortcut (⇧⌘F / Ctrl+Shift+F) lands here. */
   export const focusSearch = () => searchEl?.select();
 
-  // The section label (or the filter) already names the kind, so a row shows only what follows "Playlist · ";
-  // an artist row is the name alone.
-  const meta = (r: Row) => r.line.split(" · ").slice(1).join(" · ");
+  // Under the name, the kind and its detail, as Spotify: "Playlist · 42 songs", "Album · Daft Punk", "Artist".
+  const meta = (r: Row) => r.line;
 
   const rows = $derived.by((): Row[] => {
     if (!lib) return [];
@@ -149,37 +161,105 @@
   });
   const available = $derived(filters.filter(([f]) => (lib?.[f].length ?? 0) > 0));
   // Sections like ChatGPT's "Projekty"/"Nedávne", each under its label; a filter leaves Quick access and its own kind.
-  let drag = $state<{ uri: string; y: number; dy: number; moved: boolean; h: number; order: string[] } | null>(null);
+  let drag = $state<{ f: string; uri: string; y: number; off: number; px: number; py: number; dy: number; moved: boolean; out?: boolean; into?: number; h: number; order: string[] } | null>(null);
   // Sort by: a stable sort, so ties (never played, the same creator) keep Spotify's order.
   const sorted = $derived.by(() => {
     const by: Record<LibSort, ((a: Row, b: Row) => number) | null> = {
       added: null,
       played: (a, b) => (playedAt[b.uri] ?? 0) - (playedAt[a.uri] ?? 0),
       name: (a, b) => a.name.localeCompare(b.name, L.locale, { sensitivity: "base" }),
+      custom: null,
       creator: (a, b) => (a.sub ?? "").localeCompare(b.sub ?? "", L.locale, { sensitivity: "base" }) || a.name.localeCompare(b.name, L.locale, { sensitivity: "base" }),
     };
     return by[sort] ? [...rows].sort(by[sort]!) : rows;
   });
   // Pinned: in the order the user set (a drag shows its own until it drops), whatever the sort; the filter and the
   // search narrow it as any section.
-  const order = $derived(drag ? drag.order : pins);
-  const pinned = $derived(order.map((u) => rows.find((r) => r.uri === u)).filter((r): r is Row => !!r));
+  // A dragged row has one slot only: a pinned one dragged out shows in its own section (`place`), any other dragged
+  // over Pinned shows there, the rows where it left closing up and those where it goes making room.
+  const order = $derived(
+    drag?.f === "pinned" ? (drag.out ? drag.order.filter((u) => u !== drag!.uri) : drag.order) : drag?.into != null ? [...pins.slice(0, drag.into), drag.uri, ...pins.slice(drag.into)] : pins,
+  );
+  const byUri = $derived(new Map(rows.map((r) => [r.uri, r])));
+  const pinned = $derived(order.map((u) => byUri.get(u)).filter((r): r is Row => !!r));
+  // A section in its dragged order (a drag shows its own until it drops): ones not in it yet first (new ones are
+  // Spotify's newest), in the sort.
+  const arrange = (f: string, list: Row[]) => {
+    const rank = new Map((drag?.f === f ? drag.order : (orders[f] ?? [])).map((u, i) => [u, i]));
+    return [...list.filter((r) => !rank.has(r.uri)), ...list.filter((r) => rank.has(r.uri)).sort((a, b) => rank.get(a.uri)! - rank.get(b.uri)!)];
+  };
+  // Your playlists (unpinned): always as dragged.
+  const own = $derived(splitOwn ? arrange("own", sorted.filter((r) => r.own && !order.includes(r.uri))) : []);
+  const KINDS = new Set<string>(filters.map(([f]) => f));
   const matches = (r: Row) => !query.trim() || r.name.toLocaleLowerCase(L.locale).includes(query.trim().toLocaleLowerCase(L.locale));
   const sections = $derived(
     [
-      { f: "quick", label: L.library.quick, rows: quick },
+      { f: "quick", label: L.library.quick, rows: arrange("quick", quick) },
       { f: "site", label: "Lowkey", rows: site.filter(matches) },
       { f: "legal", label: "Legal", rows: legal.filter(matches) },
       { f: "pinned", label: L.library.pinned, rows: pinned },
-      ...filters.map(([f, label]) => ({ f: f as string, label, rows: sorted.filter((r) => r.kind === f && !order.includes(r.uri)) })),
-    ].filter((s) => s.rows.length),
+      { f: "own", label: L.library.yours, rows: own },
+      ...filters.map(([f, label]) => ({ f: f as string, label: splitOwn && f === "playlists" && own.length ? L.library.saved : label, rows: ((rows: Row[]) => (sort === "custom" ? arrange(f, rows) : rows))(sorted.filter((r) => r.kind === f && !order.includes(r.uri) && !(splitOwn && r.own))) })),
+    ].filter((s) => s.rows.length || (s.f === "pinned" && drag?.f === "pinned")),
   );
 
   const pinnable = (r: Row) => r.kind === "playlists" || r.kind === "albums" || r.kind === "artists";
-  // The row glides into (or out of) Pinned and the rest make way, instead of the list jumping.
+  // Whatever changes the library or the pins (a pin, an unpin, a save, a removal, a reload) glides: a row moves into
+  // (or out of) Pinned and the rest make way, a new row fades in, a removed one folds away (`leaving`), instead of the
+  // list jumping. A filter, search or sort doesn't (they aren't read here).
   let listEl = $state<HTMLElement>();
-  const togglePin = (r: Row) =>
-    reorders(listEl, () => flushSync(() => setPins(pins.includes(r.uri) ? pins.filter((u) => u !== r.uri) : [...pins, r.uri])));
+  let leaving = $state(false);
+  const present = $derived(new Set(sections.flatMap((s) => s.rows.map((r) => r.uri))));
+  $effect.pre(() => {
+    void [lib?.playlists, lib?.albums, lib?.artists, pins, splitOwn];
+    const play = untrack(() => flips(listEl));
+    if (!play) return;
+    leaving = true;
+    tick().then(() => (play(), (leaving = false)));
+  });
+  // A big library (over WHOLE items) draws only the rows near the view in each section (and OVER on each side), its
+  // padding standing in for the rest, as the long track lists do. Quick access always draws whole, and so does a
+  // section being dragged (its rows glide out of the way). Rows of a section are one height (measured). Updated on
+  // scroll and resize, never on a timer.
+  const WHOLE = 300;
+  const OVER = 20;
+  const windowed = $derived(present.size > WHOLE);
+  let step = $state(0);
+  let wins = $state<Record<string, [number, number]>>({});
+  function span(f: string, n: number): [number, number] {
+    if (!windowed || f === "quick" || drag?.f === f || (drag?.out && sections.find((s) => s.f === f)?.rows.some((r) => r.uri === drag!.uri))) return [0, n];
+    const [a, b] = wins[f] ?? [0, 60];
+    return [Math.min(a, n), Math.min(b, n)];
+  }
+  function measure() {
+    if (!listEl || !windowed) return;
+    const view = listEl.getBoundingClientRect();
+    const next: Record<string, [number, number]> = {};
+    for (const ul of listEl.querySelectorAll<HTMLElement>("ul[data-sec]")) {
+      const f = ul.dataset.sec!;
+      const n = sections.find((s) => s.f === f)?.rows.length ?? 0;
+      const li = ul.querySelector<HTMLElement>("li");
+      if (li && f !== "quick") step = li.offsetHeight + (parseFloat(getComputedStyle(ul).rowGap) || 0);
+      if (!step) continue;
+      const top = ul.getBoundingClientRect().top - view.top;
+      const a = Math.max(0, Math.min(n, Math.floor(-top / step) - OVER));
+      next[f] = [a, Math.max(a, Math.min(n, Math.ceil((view.height - top) / step) + OVER))];
+    }
+    if (JSON.stringify(next) !== JSON.stringify(wins)) wins = next;
+  }
+  $effect(() => {
+    void [sections, mini, density];
+    const el = listEl;
+    if (!windowed || !el) return;
+    let raf = 0;
+    const go = () => (cancelAnimationFrame(raf), (raf = requestAnimationFrame(measure)));
+    tick().then(() => untrack(measure));
+    el.addEventListener("scroll", go, { passive: true });
+    const ro = new ResizeObserver(go);
+    ro.observe(el);
+    return () => (cancelAnimationFrame(raf), el.removeEventListener("scroll", go), ro.disconnect());
+  });
+  const togglePin = (r: Row) => setPins(pins.includes(r.uri) ? pins.filter((u) => u !== r.uri) : [...pins, r.uri]);
 
   // The row's own menu (right-click, or the keyboard's menu key), at the pointer, kept inside the window: Play (Pause
   // on the playing item), Pin / Unpin, then what takes it out of the library: Unfollow for an artist or someone
@@ -209,17 +289,18 @@
     ctx.querySelector<HTMLElement>("button")?.focus();
   }
 
-  // Pinned rows reorder by dragging (only with every pin shown: no filter, no search). Past 4 px the row lifts and
+  // Every row reorders by dragging, within its section (only with every row shown: no filter, no search). Past 4 px the row lifts and
   // follows the pointer; each row it crosses glides out of its way (motion `glides`), and it settles into its slot on
   // release. The click that ends a drag opens nothing.
   let dragged = false;
   // Listened on the window, not with pointer capture: the keyed list moves the row's element as it reorders, and a
   // moved element loses its capture (the drag would stop following, or never drop).
-  function grab(e: PointerEvent, r: Row) {
-    if (e.button !== 0 || filter || query.trim() || pinned.length < 2) return;
+  function grab(e: PointerEvent, r: Row, f: string) {
+    const list = sections.find((s) => s.f === f)?.rows ?? [];
+    if (e.button !== 0 || filter || query.trim() || list.length < 2 || f === "site" || f === "legal") return;
     const li = (e.currentTarget as HTMLElement).parentElement!;
     // A step is a row and the gap under it.
-    drag = { uri: r.uri, y: e.clientY, dy: 0, moved: false, h: li.offsetHeight + parseFloat(getComputedStyle(li.parentElement!).rowGap || "0"), order: pinned.map((p) => p.uri) };
+    drag = { uri: r.uri, y: e.clientY, off: e.clientY - li.getBoundingClientRect().top, px: e.clientX, py: e.clientY, dy: 0, moved: false, h: li.offsetHeight + parseFloat(getComputedStyle(li.parentElement!).rowGap || "0"), order: list.map((p) => p.uri), f };
     const end = (ev: PointerEvent) => {
       removeEventListener("pointermove", move);
       removeEventListener("pointerup", end);
@@ -231,18 +312,57 @@
     addEventListener("pointercancel", end);
   }
   const rowOf = (uri: string) => listEl?.querySelector<HTMLElement>(`li[data-k="${CSS.escape(uri)}"]`);
+  // Past 4 px the drag runs a frame loop (only while dragging): near the list's top or bottom edge it scrolls, faster
+  // the closer; the lifted row is placed from its slot's position on screen each frame, so a scroll, a reorder or the
+  // pin target opening above never takes it off the pointer.
   function move(e: PointerEvent) {
     const d = drag;
     if (!d) return;
-    d.dy = e.clientY - d.y;
-    if (!d.moved && Math.abs(d.dy) < 4) return;
-    if (!d.moved) getSelection()?.removeAllRanges();
+    d.px = e.clientX;
+    d.py = e.clientY;
+    if (d.moved || Math.abs(e.clientY - d.y) < 4) return;
+    getSelection()?.removeAllRanges();
     d.moved = true;
+    requestAnimationFrame(frame);
+  }
+  function frame() {
+    const d = drag;
+    if (!d?.moved || !listEl) return;
+    const box = listEl.getBoundingClientRect();
+    const edge = d.h * 1.5;
+    const into = Math.max(0, edge - (d.py - box.top)) - Math.max(0, edge - (box.bottom - d.py));
+    if (into) listEl.scrollTop -= Math.max(-1, Math.min(1, into / edge)) * 14;
+    place(d);
+    requestAnimationFrame(frame);
+  }
+  function place(d: NonNullable<typeof drag>) {
+    // A pinned row dragged half a row past Pinned's top or bottom is taken out: it moves at once to where it would go
+    // in its own section (the rows there glide apart), and dropped there it's unpinned; back over Pinned, it returns.
+    const regroup = (change: () => void) => {
+      // Moves only: a section that grows or shrinks by the row isn't stretched.
+      glides([...listEl!.querySelectorAll<HTMLElement>("ul[data-sec]")], () => (change(), flushSync()), false);
+      rowOf(d.uri)?.getAnimations().forEach((a) => a.id === "glide" && a.cancel());
+    };
+    const r = listEl?.querySelector('ul[data-sec="pinned"]')?.getBoundingClientRect();
+    if (d.f === "pinned" && listEl) {
+      const out = !r || d.py < r.top - d.h / 2 || d.py > r.bottom + d.h / 2;
+      if (out !== !!d.out) regroup(() => (d.out = out));
+    } else if (d.f !== "quick" && listEl) {
+      // Any other row dragged over Pinned (with none pinned, the row's room under Quick access) shows there at once,
+      // in the slot under it; dropped there it's pinned. Half a row past Pinned, it goes back.
+      const q = listEl.querySelector('ul[data-sec="quick"]')?.getBoundingClientRect();
+      const band = r ?? (q && { top: q.bottom, bottom: q.bottom + d.h });
+      const m = d.into != null ? d.h / 2 : 0;
+      const at = band && d.py >= band.top - m && d.py <= band.bottom + m ? Math.max(0, Math.min(pins.length, Math.round((d.py - d.off - band.top) / d.h))) : undefined;
+      if (at !== d.into) regroup(() => (d.into = at));
+    }
+    const li = rowOf(d.uri);
+    if (!li) return;
+    d.dy = d.py - d.off - li.getBoundingClientRect().top;
+    if (d.out || d.into != null) return;
     const i = d.order.indexOf(d.uri);
     const steps = Math.max(-i, Math.min(d.order.length - 1 - i, Math.round(d.dy / d.h)));
     if (!steps) return;
-    const li = rowOf(d.uri);
-    if (!li) return;
     glides([li.parentElement!], () => {
       const next = d.order.filter((u) => u !== d.uri);
       next.splice(i + steps, 0, d.uri);
@@ -251,8 +371,7 @@
     });
     // The lifted row is under the pointer already: it doesn't glide, it only takes its new slot as its origin.
     li.getAnimations().forEach((a) => a.id === "glide" && a.cancel());
-    d.y += steps * d.h;
-    d.dy -= steps * d.h;
+    d.dy = d.py - d.off - li.getBoundingClientRect().top;
   }
   function drop(keep: boolean) {
     const d = drag;
@@ -262,7 +381,26 @@
     dragged = true;
     requestAnimationFrame(() => setTimeout(() => (dragged = false)));
     if (!keep) return;
-    setPins(d.order);
+    if (d.into != null) {
+      setPins([...pins.slice(0, d.into), d.uri, ...pins.slice(d.into)]);
+      const row = rowOf(d.uri)?.firstElementChild;
+      return void (row && settle(row, d.dy));
+    }
+    if (d.f === "pinned" && d.out) {
+      setPins(pins.filter((u) => u !== d.uri));
+      const row = rowOf(d.uri)?.firstElementChild;
+      return void (row && settle(row, d.dy));
+    }
+    if (d.f === "pinned") setPins(d.order);
+    else {
+      // A kind's section dragged under another sort: every kind keeps the order it shows, now as Custom.
+      const next = { ...orders, [d.f]: d.order };
+      if (KINDS.has(d.f) && sort !== "custom") {
+        for (const s of sections) if (KINDS.has(s.f) && s.f !== d.f) next[s.f] = s.rows.map((r) => r.uri);
+        setSort("custom");
+      }
+      setOrders(next);
+    }
     const row = rowOf(d.uri)?.firstElementChild;
     if (row) settle(row, d.dy);
   }
@@ -283,16 +421,17 @@
 
 <aside class="lib" class:mini class:compact={density === "compact"} class:spacious={density === "spacious"} aria-label={L.library.label}>
   <div class="panel">
-    <!-- One row: library search and a filter menu, like T3 Code's sidebar. -->
+    <!-- One field, as the toolbar's search: the lens, the library search, its shortcut, and the filter menu at its end. -->
     <header>
-      <label class="search">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (the field itself takes the keyboard) -->
+      <div class="search" onclick={(e) => e.target === e.currentTarget && searchEl?.focus()}>
+        <svg class="lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>
         <input type="search" placeholder={L.library.search} aria-label={L.library.searchLabel} title="{L.library.searchLabel} ({kbd})" bind:this={searchEl} bind:value={query} disabled={!lib} onkeydown={(e) => e.key === "Escape" && (query ? (query = "") : searchEl?.blur())} />
         {#if kbd}<kbd class="kbd" aria-hidden="true">{kbd}</kbd>{/if}
-      </label>
-      <button class="icon filter ic" class:on={filter} aria-label={L.library.filterLabel} title={L.library.filter} popovertarget="lib-menu" disabled={!lib} bind:this={filterBtn}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" /></svg>
-      </button>
+        <button class="icon filter ic" class:on={filter} aria-label={L.library.filterLabel} title={L.library.filter} popovertarget="lib-menu" disabled={!lib} bind:this={filterBtn}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" /></svg>
+        </button>
+      </div>
     </header>
     <div id="lib-menu" class="menu" popover="manual" use:dismiss={() => filterBtn} bind:this={menu} role="menu" aria-label={L.library.filterLabel}>
       {#if available.length > 1}<p class="t-label head">{L.library.show}</p>{/if}
@@ -326,6 +465,10 @@
         <span class="label">{L.library.showRecent}</span>
         <svg class="check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
       </button>
+      <button class="hl" role="menuitemcheckbox" aria-checked={splitOwn} onclick={() => { menu.hidePopover(); setSplitOwn(!splitOwn); }}>
+        <span class="label">{L.library.splitOwn}</span>
+        <svg class="check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+      </button>
     </div>
     <!-- A row's own menu (right-click): Play, Pin, then Unfollow / Remove from library, per kind. -->
     <div class="menu ctx" popover="manual" use:dismiss={() => ctxFrom} bind:this={ctx} ontoggle={ctxClosed} role="menu" aria-label={ctxRow?.name} style:left="{ctxAt.x}px" style:top="{ctxAt.y}px">
@@ -356,25 +499,28 @@
     {#if lib}
       <div class="list" bind:this={listEl} in:enter={{ y: 4 }} out:exit>
         {#each sections as sec (sec.f)}
-          <section aria-label={sec.label} class:quick={sec.f === "quick" || sec.f === "site" || sec.f === "legal"} class:site={sec.f === "site" || sec.f === "legal"}>
-            <!-- Quick access (Home, Liked songs, Recently played) stands free at the top, without a label. -->
-            {#if sec.f !== "quick"}
+          <section aria-label={sec.label} class:quick={sec.f === "quick" || sec.f === "site" || sec.f === "legal"} class:site={sec.f === "site" || sec.f === "legal"} class:pins={sec.f === "pinned"}>
+            <!-- Quick access (Home, Liked songs, Recently played) stands free at the top, without a label; so does
+                 Pinned, which never folds (each row shows its pin), save its rule in the icon-only view. -->
+            {#if sec.f !== "quick" && (sec.f !== "pinned" || mini)}
               <h3 class="t-label" data-k="h:{sec.f}">
                 <button class="fold" aria-expanded={!shut(sec.f)} onclick={() => fold(sec.f)}>{sec.label}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
               </h3>
             {/if}
             {#if !shut(sec.f)}
-            <ul in:enter={{ y: 0, collapse: true }} out:exit={{ y: 0, collapse: true }}>
-              {#each sec.rows as r (r.uri)}
-                {@const on = r.uri === current || (r.kind === "artists" && artists.includes(r.uri))}
+            {@const [a, b] = span(sec.f, sec.rows.length)}
+            <ul data-sec={sec.f} style:padding-top={a ? `${a * step}px` : undefined} style:padding-bottom={b < sec.rows.length ? `${(sec.rows.length - b) * step}px` : undefined} in:enter={{ y: 0, collapse: true }} out:exit={{ y: 0, collapse: true }}>
+              {#each a || b < sec.rows.length ? sec.rows.slice(a, b) : sec.rows as r (r.uri)}
+                {@const on = holds.includes(r.uri)}
                 {@const sel = r.kind === "home" ? homeOn : r.uri === selected}
-                <li data-k={r.uri}>
+                <!-- Only a row gone from the list folds away; one that moved to another section is already there. -->
+                <li data-k={r.uri} out:exit={{ y: 0, collapse: true, f: leaving && !present.has(r.uri) ? 1 : 0 }}>
                   <button
                     class="row hl" class:playing={on} class:selected={sel}
-                    class:lifted={drag?.moved && drag.uri === r.uri} style:--dy={drag?.moved && drag.uri === r.uri ? `${drag.dy}px` : undefined}
+                    class:lifted={drag?.moved && drag.uri === r.uri} class:unpin={drag?.moved && drag.uri === r.uri && drag.out} style:--dy={drag?.moved && drag.uri === r.uri ? `${drag.dy}px` : undefined}
                     aria-current={sel ? "page" : undefined} onclick={() => (dragged ? (dragged = false) : r.kind === "home" ? home() : open(r))} title={r.name}
                     oncontextmenu={(e) => menuFor(e, r)}
-                    onpointerdown={sec.f === "pinned" ? (e) => grab(e, r) : undefined}
+                    onpointerdown={(e) => grab(e, r, sec.f)}
                     data-open={r.kind === "home" ? undefined : r.uri}
                     onpointerenter={() => (pointed = r.uri)} onpointerleave={() => (pointed = undefined)}
                     onfocusin={() => (pointed = r.uri)} onfocusout={() => (pointed = undefined)}
@@ -464,7 +610,7 @@
 
   /* The global .menu, anchored under the filter button. */
   .filter { anchor-name: --lib-filter; }
-  .menu { position-anchor: --lib-filter; top: calc(anchor(bottom) + var(--sp-1)); left: anchor(left); width: 208px; transform-origin: top left; }
+  .menu { position-anchor: --lib-filter; top: calc(anchor(bottom) + var(--sp-1)); left: anchor(left); width: max-content; min-width: 208px; transform-origin: top left; }
   /* Rows like Select's (AGENTS.md): kind glyph, name, count in --fg-3, and an accent check at the right on the chosen
      one; no fill but the hover. */
   .menu .kind { flex: none; width: 16px; height: 16px; color: var(--fg-3); }
@@ -473,9 +619,14 @@
   /* The row menu opens at the pointer (left/top set from it). */
   .menu .kind { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   .menu.ctx { position: fixed; position-anchor: none; inset: auto; width: auto; min-width: 140px; transform-origin: top left; }
-  /* A pinned row being dragged: lifted over the others (a floating layer: --panel, --shadow), under the pointer. */
-  .row.lifted { position: relative; z-index: 1; transform: translateY(var(--dy)); background: var(--panel); box-shadow: 0 0 0 0.5px var(--border-strong), var(--shadow); transition: none; }
-  .menu .label { flex: 1; min-width: 0; }
+  /* A row being dragged: lifted over the others (a floating layer: glass, --shadow), under the pointer. */
+  .row.lifted { position: relative; z-index: 1; transform: translateY(var(--dy)); background: var(--glass-panel); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: 0 0 0 0.5px var(--border-strong), var(--shadow); transition: none; }
+  /* A pinned row dragged out of Pinned: dimmed, its pin off, so the drop reads as an unpin. */
+  .row.lifted.unpin { opacity: 0.7; }
+  .row.lifted.unpin .pin.pinned { color: var(--fg-3); }
+  .row.lifted.unpin .pin.pinned svg .fill { fill: none; }
+  /* A label never wraps or runs under the check: the menu grows to its longest row. */
+  .menu .label { flex: 1; min-width: 0; white-space: nowrap; }
   .menu .n { color: var(--fg-3); font-size: var(--meta-fs); font-variant-numeric: tabular-nums; }
   .menu .check { flex: none; width: 14px; height: 14px; color: var(--accent); stroke-width: 2.25; visibility: hidden; }
   .menu [aria-checked="true"] .check { visibility: visible; }
@@ -488,22 +639,25 @@
   svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   svg .fill { fill: currentColor; stroke: none; }
 
-  /* Search reads as a row (like "Nový čet") until focused. */
+  /* Search: one field on the sidebar's glass, no border and no ground of its own: quiet at rest (--fg-3), the hover
+     surface when pointed at, --active when focused. The filter button sits inside its right end, a step smaller. */
   .search {
     flex: 1;
     min-width: 0;
     display: flex;
     align-items: center;
     gap: var(--sp-2);
-    padding: 0 var(--sp-2);
+    height: var(--ctl-h);
+    padding: 0 var(--sp-0) 0 var(--sp-2);
     border-radius: var(--r-2);
     color: var(--fg-3);
-    transition: background var(--m-2) var(--ease), color var(--m-2) var(--ease);
+    transition: background var(--m-5) var(--ease), color var(--m-5) var(--ease);
   }
-  .search:hover { background: var(--hover); }
-  .search:focus-within { background: var(--active); color: var(--fg-2); }
-  .search svg { width: 16px; height: 16px; flex: none; }
-  .search input { flex: 1; min-width: 0; border: none; background: none; color: var(--fg); font: inherit; font-size: var(--fs); height: var(--ctl-h); padding: 0; outline: none; }
+  .search:hover { background: var(--hover); transition-duration: var(--m-1); }
+  .search:focus-within { color: var(--fg-2); background: var(--active); transition-duration: var(--m-2); }
+  .search .lens { width: 14px; height: 14px; flex: none; stroke-width: 2; }
+  .search .filter { flex: none; width: calc(var(--ctl-h) - var(--sp-1)); height: calc(var(--ctl-h) - var(--sp-1)); border-radius: var(--r-1); }
+  .search input { flex: 1; min-width: 0; height: 100%; border: none; background: none; color: var(--fg); font: inherit; font-size: var(--fs); padding: 0; outline: none; }
   .search input::placeholder { color: var(--fg-3); }
   .search input::-webkit-search-cancel-button { display: none; }
   /* Its shortcut rests at the right end, as the toolbar search's, and fades out once the field is focused or filled. */
@@ -522,7 +676,8 @@
   ul { list-style: none; margin: 0; padding: 0; }
   /* Rows of a list stand --sp-0 apart (AGENTS.md › Spacing). */
   .list ul { display: flex; flex-direction: column; gap: var(--sp-0); }
-  h3 { padding: var(--sp-4) var(--sp-2) var(--sp-1); }
+  /* Sections stand --sp-5 apart (the density's step: --sp-5 swaps with .compact/.spacious). */
+  h3 { padding: var(--sp-5) var(--sp-2) var(--sp-1); }
   /* A section's label folds it: quiet until touched, the chevron shown when pointed at or folded (turned to the side). */
   .fold { display: flex; align-items: center; gap: var(--sp-1); width: 100%; transition: color var(--m-2) var(--ease); }
   .fold:is(:hover, :focus-visible) { color: var(--fg-2); }
@@ -533,6 +688,8 @@
   /* Quick access has no label, but keeps the room a label's top padding gave it under the search. */
   .quick:not(.site) { padding-top: var(--sp-4); }
   .mini .quick { padding-top: 0; }
+  /* Pinned has no label either: only the room a label's top padding gave it. */
+  .lib:not(.mini) .pins { padding-top: var(--sp-5); }
   /* Quick access is the app's own navigation, not library items: a bare glyph in the cover column (so names line up
      with the rows below), the name alone, rows --row-h tall. --fg-2 at rest, --fg when open; the playing one is --now
      as any row. The icon-only view keeps its covers. */
@@ -540,7 +697,7 @@
   .lib:not(.mini) .quick .art { height: auto; background: none; outline: none; color: var(--fg-2); transition: color var(--m-5) var(--ease); }
   .lib:not(.mini) .quick .art svg { width: 18px; height: 18px; }
   .lib:not(.mini) .quick .line { display: none; }
-  .lib:not(.mini) .quick .name { font-size: var(--fs); color: var(--fg-2); transition: color var(--m-5) var(--ease); }
+  .lib:not(.mini) .quick .name { font-size: var(--name-fs); color: var(--fg-2); transition: color var(--m-5) var(--ease); }
   .lib:not(.mini) .quick .row:hover :is(.art, .name) { transition-duration: var(--m-1); }
   .lib:not(.mini) .quick .row:is(.selected, :hover) :is(.art, .name) { color: var(--fg); }
   .lib:not(.mini) .quick .playing .name { color: var(--now); }
@@ -580,8 +737,6 @@
   .skeleton .art, .skeleton .bar { background: var(--active); }
   .skeleton .bar { height: 9px; border-radius: var(--r-1); width: 60%; }
   .skeleton:nth-child(3n) .bar { width: 42%; }
-  .skeleton { animation: pulse 1.4s ease-in-out infinite, wait var(--m-4) var(--ease) var(--m-4) backwards; }
-  @keyframes pulse { 50% { opacity: 0.5; } }
 
   /* Icon-only view. */
   .mini header { display: none; }
@@ -594,7 +749,9 @@
   .pin.pinned, .pin.pinned:hover { color: var(--accent); }
   .pin.pinned svg .fill { stroke: currentColor; }
   .row:not(.lifted):is(:hover, :focus-visible) .pin { opacity: 1; transition-duration: var(--m-1); }
-  .row:not(.lifted):has(.pin):is(:hover, :focus-visible) :is(.text, .eq) { -webkit-mask: linear-gradient(to left, transparent var(--ctl-h), #000 calc(var(--ctl-h) + var(--sp-4))); mask: linear-gradient(to left, transparent var(--ctl-h), #000 calc(var(--ctl-h) + var(--sp-4))); }
+  /* A pinned row shows its pin always (there is no Pinned label), unless it plays: then the eq holds the spot till hover. */
+  .row:not(.playing) .pin.pinned { opacity: 1; }
+  .row:not(.lifted):has(.pin):is(:hover, :focus-visible) :is(.text, .eq), .row:not(.playing):has(.pin.pinned) .text { -webkit-mask: linear-gradient(to left, transparent var(--ctl-h), #000 calc(var(--ctl-h) + var(--sp-4))); mask: linear-gradient(to left, transparent var(--ctl-h), #000 calc(var(--ctl-h) + var(--sp-4))); }
   .pin:hover { color: var(--fg); background: var(--hover); }
   .pin:active { background: var(--press); }
   .mini .pin, .mini .text, .mini .eq, .mini .skeleton .bar { display: none; }
@@ -616,5 +773,4 @@
   .mini .row:focus-visible { outline: none; }
   .mini .row:focus-visible .art { outline-color: color-mix(in srgb, var(--accent) 60%, transparent); }
   .mini .note { display: none; }
-  @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
 </style>
