@@ -13,19 +13,23 @@
   import Search, { type Results } from "./Search.svelte";
   import Home from "./Home.svelte";
   import AddTo from "./AddTo.svelte";
-  import { enter, exit, initMotion, motion } from "./motion.svelte";
+  import { enter, exit, fitFloat, initMotion, motion } from "./motion.svelte";
+  import { dismiss } from "./menu";
+  import { shortLink, spotifyUri } from "./link";
   import { holdTiles } from "./tiles";
   import Site, { SITE, LEGAL, type SitePage, getLatest } from "./Site.svelte";
   import Settings from "./Settings.svelte";
   import Tour, { type Stop } from "./Tour.svelte";
   import * as demo from "./demo";
+  import Hush from "./Hush.svelte";
 
   const MAC = typeof document !== "undefined" && document.documentElement.dataset.os === "mac"; // app.html sets it (?mac, ?windows)
   const MOD = MAC ? "⌘" : "Ctrl+";
 
   let mounted = $state(false);
   let settingsOpen = $state(false);
-  let homeFull = $state(true);
+  // Home's shelves the demo's visitor hid (Home's own picker; `false` by shelf key).
+  let shelfPicks = $state<Record<string, boolean>>({});
   let win = $state<HTMLElement>();
   let winW = $state(1100);
 
@@ -36,6 +40,9 @@
   let libSort = $state<LibSort>("added");
   let libDensity = $state<Density>("regular");
   let libRecent = $state(true);
+  // Your own playlists in a section of their own, as the app shows them; each section's dragged order (by section).
+  let libOwn = $state(true);
+  let orders = $state<Record<string, string[]>>({});
   const LIB_MINI = 84;
   const LIB_MIN = 200;
   const LIB_MAX = 440;
@@ -106,6 +113,21 @@
     const item = lib.playlists.find((i) => i.uri === p.uri);
     if (item?.count != null) item.count = next.size;
   }
+
+  /** Sidebar rows marked as playing, one tier only (as the app): the playlists holding the track, else its followed
+   *  artists, else Liked songs; the source alone when it is in that tier. */
+  const holding = $derived.by(() => {
+    const t = playback.item?.uri;
+    if (!t) return source ? [source] : [];
+    const by = new Set((playback.item?.decorations?.creators ?? []).map((c) => c.entity?.uri));
+    const tiers = [
+      lib.playlists.filter((p) => p.uri === source || members.get(p.uri)?.has(t)).map((p) => p.uri),
+      lib.artists.filter((a) => a.uri === source || by.has(a.uri)).map((a) => a.uri),
+      source === lib.liked.uri || likedSet.has(t) ? [lib.liked.uri] : [],
+    ];
+    const tier = tiers.find((u) => u.length) ?? (source ? [source] : []);
+    return source && tier.includes(source) ? [source] : tier;
+  });
 
   // Views and history (the app's back/forward and breadcrumb) ----------------------------------------------------
   const RECENT = "lowkey:recent";
@@ -190,10 +212,31 @@
   const open = (row: Row, fromSidebar = false) => (row.uri !== selected?.uri || searchOpen || homeOpen) && navigate({ row, root: fromSidebar });
   const page = $derived(searchOpen ? "search" : homeOpen ? "home" : (selected?.uri ?? ""));
   const goHome = () => !(homeOpen && !searchOpen) && navigate({ row: selected, home: true });
+  // A pasted Spotify link opens its item in the app; the demo can't reach Spotify, so it says so in the search view.
+  let linkNote = $state("");
   function onSearch() {
-    if (!searchOpen) navigate({ row: selected, search: true });
     const q = query.trim();
-    results = q ? demo.search(q) : null;
+    // An emptied query leaves the search for the page under it, as the app does.
+    if (!q) {
+      results = null;
+      linkNote = "";
+      if (!searchOpen) return;
+      const prev = back.at(-1);
+      if (prev && !prev.search) return void goBack();
+      return show({ row: selected, home: !selected });
+    }
+    const link = spotifyUri(q) ?? shortLink(q);
+    // The demo's one known link opens its album, as the app would; any other link only gets the note.
+    const row = link && demo.linkRow(link);
+    if (row) {
+      query = "";
+      results = null;
+      linkNote = "";
+      return void open(row);
+    }
+    if (!searchOpen) navigate({ row: selected, search: true });
+    linkNote = link ? "In Lowkey, a pasted Spotify link opens right away: a song plays, an album, playlist or artist opens. This demo knows only one link, the one Try it in the tour pastes." : "";
+    results = link ? null : demo.search(q);
   }
   async function toTop() {
     const y = mainEl?.scrollTop ?? 0;
@@ -218,20 +261,37 @@
     const last = views.length - 1;
     return path.map((c) => ({ key: c.key, name: c.name, go: c.at < last ? () => goBackBy(last - c.at) : undefined }));
   });
+  // A long path keeps its first step and the last three; the steps between fold into a "…" menu.
+  const folded = $derived(crumbs.length > 4 ? crumbs.slice(1, -3) : []);
+  const shownCrumbs = $derived(folded.length ? [crumbs[0], ...crumbs.slice(-3)] : crumbs);
+  let foldMenu = $state<HTMLElement>();
+  let foldBtn = $state<HTMLElement>();
 
   // The tour (Tour.svelte): every feature, lit in place in this window. Started by `lowkey:tour` (the hero, Features).
   let touring = $state(false);
   const liked = () => open({ uri: lib.liked.uri, name: L.library.likedSongs, kind: "liked", line: "" }, true);
   const download = () => open(siteRows.find((r) => r.uri === "lowkey:download")!, true);
+  // The search stop's link: a real album link the demo opens as its own copy of that album (demo.linkRow).
+  const LINK = "https://open.spotify.com/album/4eLPsYPBmXABThSJ821sqY";
+  // Try it pastes the link into the field and lets it sit there a moment, so you see what was pasted, then opens it.
+  let pasting = $state(false);
+  function pasteLink() {
+    searchEl?.focus(); // before the query: focusing a filled field would search at once
+    query = LINK;
+    pasting = true;
+    setTimeout(() => ((pasting = false), onSearch()), 900);
+  }
   const stops: Stop[] = [
     { title: "A one-minute tour", text: "Everything in this window is the real Lowkey, running on demo data. Each stop lights one part of it, and you can try it right there.", go: goHome },
-    { at: ".side", title: "Your library, as in Spotify", text: "Playlists, albums and artists, with your pins on top. Sort and filter it from the button by the search.", tip: "Drag its right edge: narrow enough and it becomes a column of covers.", did: () => libWidth },
-    { at: ".side section:not(.quick) li", title: "No waiting", text: "Point at a playlist and Lowkey loads it right then, so it's already there when you click.", tip: "Point at it, then open it.", did: () => selected?.uri },
-    { at: "main .tiles", title: "Every card visible", text: "No “Show all”. Every row shows all of its albums, playlists and artists, as many per row as fit.", tip: "Resize your browser: once you stop, the tiles glide into place in one move.", go: goHome, did: () => winW },
-    { at: ".dock", title: "Nothing cut off", text: "Where Spotify trims a long title with “…”, Lowkey glides it so you can read all of it.", tip: "Press play, then make the window narrow.", did: () => playing },
+    { at: ".side", title: "Your library, as in Spotify", text: "Playlists, albums and artists in one sidebar. Sort and filter it from the button by the search.", tip: "Drag its right edge: narrow enough and it becomes a column of covers.", did: () => libWidth },
+    { at: ".side section.pins", title: "Pinned on top", text: "What you play most stays at the top, in the order you choose. Every row has a pin; pinned ones keep theirs showing.", tip: "Drag any row from below up here to pin it, or drag a pinned one out to unpin it.", did: () => pins.join() },
+    { at: ".side section:has([data-k='h:own'])", title: "Made by you", text: "Your own playlists get a section of their own, apart from the ones you saved, and every section keeps the order you drag it into.", tip: "Drag a playlist up or down.", did: () => JSON.stringify(orders) },
+    { at: ".side section:has([data-k='h:own']) li", title: "No waiting", text: "Point at a playlist and Lowkey loads it right then, so it's already there when you click.", tip: "Point at it, then open it.", did: () => selected?.uri },
+    { at: "main .loaded", title: "Every card visible", text: "No “Show all”. Every shelf shows all of its albums, playlists and artists, as many per row as fit. Pick the shelves Home shows from the menu at its top.", tip: "Resize your browser: once you stop, the cards glide into place in one move.", go: goHome, did: () => winW },
+    { at: ".dock", title: "A floating player", text: "The player floats over the page on glass, exactly as wide as what it shows. A long title glides so you can read all of it, instead of ending in “…”.", tip: "Press play, or skip to the next song.", did: () => `${playing}${playback.item?.uri}` },
     { at: "main .like.on", title: "Songs into your playlists", text: "The check next to a liked song opens the save menu: add it to your own or collaborative playlists, or take it out.", tip: "Press the check.", go: liked, did: () => !!win?.querySelector("[role=menu]:popover-open") },
-    { at: ".top .history", title: "Back and forward", text: `Every page you open is a step. Go back with the arrows, ${MOD}[ and ${MOD}], your mouse's side buttons or a swipe.` },
-    { at: ".find", title: "Search", text: `Songs, albums, artists and playlists, as you type. ${MOD}F from anywhere.` },
+    { at: ".top .history", title: "Back and forward", text: `Every page you open is a step. Go back with the arrows, ${MOD}[ and ${MOD}], your mouse's side buttons or a swipe. A long path folds its middle into “…”.` },
+    { at: ".find", title: "Search, or paste a link", text: `Songs, albums, artists and playlists as you type, ${MOD}F from anywhere. Paste a Spotify link and Lowkey opens it at once: a song plays, an album or playlist opens.`, tip: "Press Try it: it pastes an album link and the album opens.", try: pasteLink },
     { at: ".gear", title: "Yours to tune", text: "Theme, accent colour, contrast, density, UI scale, motion and glass. Every change shows at once.", tip: `Open Settings with the gear or ${MOD},.`, did: () => settingsOpen },
     { title: "That's Lowkey", go: () => (settingsOpen = false), text: "Your Spotify Premium, in a quieter, native window. Free, forever, for macOS. Windows is coming soon." },
   ];
@@ -257,7 +317,7 @@
       playback: { duration_ms: t.duration_ms },
     },
   });
-  const first = demo.tracks.get("spotify:track:rudimental-4")!;
+  const first = demo.tracks.get("spotify:track:chase-status-generic-2")!;
   let queue: Track[] = demo.queueOf(first.album_uri!);
   let at = queue.findIndex((t) => t.uri === first.uri);
   let context = $state<string | undefined>(first.album_uri!);
@@ -270,6 +330,14 @@
   const playing = $derived(playback.status === "playing");
   const source = $derived(!context || context.startsWith("spotify:track:") ? origin : context);
   const nowTrack = $derived(demo.tracks.get(playback.item!.uri) ?? null);
+  // Every few seconds of "playing" silence (not mid-tour): pause, and let a joke point to the real app. Play again, and it comes back.
+  const HUSH_S = 2;
+  let hush = $state(false);
+  $effect(() => {
+    if (!playing || touring || hush) return;
+    const t = setTimeout(() => ((hush = true), send("pause")), HUSH_S * 1000);
+    return () => clearTimeout(t);
+  });
   const pos = () => { const p = playback.position!; return p.position_ms + (Date.now() - p.timestamp_ms) * p.speed; };
   let endTimer: ReturnType<typeof setTimeout> | undefined;
   function setPos(ms: number, run = playing) {
@@ -325,7 +393,17 @@
     if (from && from !== RECENT) playedAt = { ...untrack(() => playedAt), [from]: Date.now() };
   });
 
+  // The floating player: as wide as its parts want, its width gliding (motion `fitFloat`).
+  const look = { ...PLAYER_LOOK, float: true };
+  let dock = $state<HTMLElement>();
+  const fitDock = () => dock?.firstElementChild && fitFloat(dock, dock.firstElementChild as HTMLElement, true);
+  $effect(() => {
+    void [lib.liked.uris, dock, winW];
+    tick().then(fitDock);
+  });
+
   onMount(() => {
+    document.documentElement.classList.add("player-float");
     initMotion();
     // A reload keeps the entry's old depth in the browser's history while the window starts at the start: reset it, or
     // the first page opened pushes a depth that's already there and back does nothing.
@@ -360,12 +438,13 @@
       removeEventListener("mouseup", mouse);
       ro.disconnect();
       clearTimeout(endTimer);
+      document.documentElement.classList.remove("player-float");
     };
   });
 </script>
 
 <!-- The desktop behind the window, for the glass to frost. -->
-<div class="wall" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="wall" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b></div>
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="window lk" bind:this={win} role="application" aria-label="Lowkey, interactive demo"
   onkeydown={(e) => {
@@ -406,7 +485,15 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z" /></svg>
           {#if !crumbs.length}<span>{L.app.home}</span>{/if}
         </button>
-        {#each crumbs as c (c.key)}
+        {#each shownCrumbs as c, i (c.key)}
+          {#if i === 1 && folded.length}
+            <span class="step fold">
+              <span class="sep" aria-hidden="true">/</span>
+              <button class="ic" aria-label={L.app.morePath} title={L.app.morePath} popovertarget="crumb-fold" bind:this={foldBtn}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.25" /><circle cx="12" cy="12" r="1.25" /><circle cx="18" cy="12" r="1.25" /></svg>
+              </button>
+            </span>
+          {/if}
           <span class="step">
             <span class="sep" aria-hidden="true">/</span>
             {#if c.go}
@@ -420,7 +507,7 @@
       </div>
       <div class="cap tools">
       <label class="find">
-        <span class="lens" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg></span>
+        <span class="lens" aria-hidden="true">{#if pasting}<svg class="spin" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 1-8 8" /></svg>{:else}<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>{/if}</span>
         <input
           type="search" placeholder={L.app.searchSpotify} aria-label={L.app.searchSpotify} title="{L.common.search} ({MOD}F)" spellcheck="false"
           bind:this={searchEl} bind:value={query} oninput={onSearch} onfocus={() => query && !searchOpen && onSearch()}
@@ -447,6 +534,12 @@
       </button>
       </div>
     </header>
+    <!-- Outside the header, so the toolbar's button styles don't reach the menu's rows. -->
+    <div id="crumb-fold" class="menu" popover="manual" use:dismiss={() => foldBtn} bind:this={foldMenu} role="menu" aria-label={L.app.morePath}>
+      {#each folded as c (c.key)}
+        <button role="menuitem" onclick={() => { foldMenu?.hidePopover(); c.go?.(); }}>{c.name}</button>
+      {/each}
+    </div>
     {#if !libHidden}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
       <div
@@ -462,18 +555,19 @@
         <nav class="strip" aria-label={L.app.navigation}>
           {#if !libMini}
             <span class="logo">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14.5a6 6 0 0 1 12 0Z" /><rect x="3" y="16.5" width="18" height="1.5" rx=".75" /></svg>
+              <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15a6 6 0 0 1 12 0M3 15h18M7 19h10" /></svg>
               <span class="wordmark">low<span>key</span></span>
               <span class="ver">demo</span>
             </span>
           {/if}
         </nav>
         <Library bind:this={libView} kbd={MAC ? "⇧⌘F" : "Ctrl+Shift+F"} mini={libMini}
-          {lib} error="" current={source} artists={playback.item?.decorations?.creators?.map((c) => c.entity?.uri) ?? []} {playing} selected={searchOpen || homeOpen ? undefined : selected?.uri.startsWith(LOG) ? "lowkey:changelog" : selected?.uri}
+          {lib} error="" current={source} holds={holding} {playing} selected={searchOpen || homeOpen ? undefined : selected?.uri.startsWith(LOG) ? "lowkey:changelog" : selected?.uri}
           recent={libRecent && played.length ? { uri: RECENT, name: L.app.recentlyPlayed, kind: "recent", line: `${L.kind.playlist} · ${L.common.songs(played.length)}` } : undefined}
           open={(r) => open(r, true)} home={goHome} homeOn={homeOpen && !searchOpen} reload={() => {}} login={() => {}}
           {pins} setPins={(p) => (pins = p)} sort={libSort} setSort={(s) => (libSort = s)} {playedAt} play={playContext} density={libDensity} setDensity={(d) => (libDensity = d)}
           site={siteRows} legal={legalRows} showRecent={libRecent} setShowRecent={(on) => (libRecent = on)}
+          splitOwn={libOwn} setSplitOwn={(on) => (libOwn = on)} {orders} setOrders={(o) => (orders = o)}
           remove={(r) => (setSaved(r, false), (pins = pins.filter((u) => u !== r.uri)))}
         />
       </div>
@@ -484,10 +578,10 @@
         {#key page}
           <div class="page" in:enter={{ y: 8 }} out:exit>
             {#if untrack(() => page) === "search"}
-              <Search query={query.trim()} {results} error="" {open} {playTrack} play={playContext} current={source} playingTrack={playback.item?.uri} {playing} />
+              <Search query={query.trim()} {results} error={linkNote} {open} {playTrack} play={playContext} current={source} playingTrack={playback.item?.uri} {playing} />
             {:else if untrack(() => page) === "home"}
-              <Site page="hero" />
-              <Home feed={demo.feed} full={homeFull} setFull={(on) => (homeFull = on)} error="" retry={() => {}} {open} play={playContext} current={source} {playing} />
+              <Site page="hero" {openVersion} />
+              <Home feed={demo.feed} hush={false} picks={shelfPicks} setShelf={(sh, on) => { const { [sh.key]: _, ...rest } = shelfPicks; shelfPicks = on ? rest : { ...rest, [sh.key]: false }; }} error="" retry={() => {}} {open} play={playContext} current={source} {playing} />
             {:else if sitePage(untrack(() => page))}
               {@const uri = untrack(() => page)}
               <Site page={sitePage(uri)!} version={uri.startsWith(LOG) ? uri.slice(LOG.length) : undefined} {openVersion} />
@@ -507,15 +601,16 @@
         {/key}
       </main>
     </div>
-    <div class="dock">
-      <Player {playback} {playing} note="Just a demo, no music plays" track={nowTrack} look={PLAYER_LOOK} {send} {open}
-        liked={likedSet.has(playback.item!.uri)} setLiked={(on) => setLiked(playback.item!.uri, on)} {addTo}
+    <div class="dock" bind:this={dock}>
+      <Player {playback} {playing} note="Demo, no sound" track={nowTrack} {look} fit={fitDock} {send} {open}
+        liked={(uri) => likedSet.has(uri)} {setLiked} {addTo}
         openArtist={(uri, name) => open({ ...lib.artists.find((a) => a.uri === uri), uri, name, kind: "artists", line: L.kind.artist })} />
     </div>
     <AddTo bind:this={picker} playlists={editable} has={inPlaylist} set={setInPlaylist} liked={(u) => likedSet.has(u)} {setLiked} />
   </div>
   {/if}
   {#if touring && win}<Tour {win} {stops} done={(dl) => { touring = false; if (dl) download(); }} />{/if}
+  {#if hush}<Hush track={nowTrack?.name ?? "this song"} artist={nowTrack?.artists[0]?.name ?? "the artist"} secs={HUSH_S} {download} close={() => (hush = false)} />{/if}
   {#if settingsOpen}<Settings close={() => { settingsOpen = false; win?.querySelector<HTMLElement>(".gear")?.focus(); }} />{/if}
 </div>
 
@@ -524,32 +619,69 @@
      wallpaper behind it, frosted the way macOS frosts the desktop. */
   /* The desktop: the theme's own ground with three dim washes of its accent (and two neighbouring hues) drifting slowly
      underneath, enough movement for the glass to show it is glass, never loud. Only transforms animate. */
+  /* Our own wallpaper in the macOS manner: a deep sky in the accent's family, two broad soft bands of colour sweeping
+     across it (b) and three glows drifting underneath (i). Original, no Apple artwork; hues follow the accent. */
   .wall {
     position: fixed;
     inset: 0;
     overflow: hidden;
-    background: var(--bg);
-    --mix: 26%;
+    /* Light: pale, low-chroma hues so the frosted sidebar reads near-white, as on a macOS light desktop. */
+    --mix: 40%;
+    --h1: oklch(from var(--accent) 0.8 0.1 calc(h - 70));
+    --h2: oklch(from var(--accent) 0.84 0.09 h);
+    --h3: oklch(from var(--accent) 0.9 0.07 calc(h + 70));
+    background:
+      radial-gradient(120% 80% at 80% 110%, color-mix(in oklab, var(--h3) 45%, transparent), transparent 60%),
+      linear-gradient(165deg, oklch(from var(--accent) 0.88 0.06 calc(h - 40)), oklch(from var(--accent) 0.93 0.04 h) 55%, oklch(from var(--accent) 0.9 0.07 calc(h + 60)));
+  }
+  :global(html.dark) .wall {
+    --mix: 62%;
+    --h1: oklch(from var(--accent) 0.42 0.2 calc(h - 70));
+    --h2: oklch(from var(--accent) 0.48 0.2 h);
+    --h3: oklch(from var(--accent) 0.55 0.17 calc(h + 70));
+    background:
+      radial-gradient(120% 80% at 80% 110%, color-mix(in oklab, var(--h3) 40%, transparent), transparent 60%),
+      linear-gradient(165deg, oklch(from var(--accent) 0.16 0.06 calc(h - 40)), oklch(from var(--accent) 0.12 0.04 h) 55%, oklch(from var(--accent) 0.18 0.07 calc(h + 60)));
   }
   .wall i {
     position: absolute;
     width: 75vmax;
     height: 75vmax;
     border-radius: 50%;
-    background: radial-gradient(closest-side, color-mix(in oklab, var(--c) var(--mix), var(--bg)), transparent);
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--c) var(--mix), transparent), transparent);
     animation: drift var(--t) ease-in-out infinite alternate;
     will-change: transform;
   }
-  .wall i:nth-child(1) { --c: var(--accent); --t: 48s; left: -25vmax; top: -30vmax; }
-  .wall i:nth-child(2) { --c: oklch(from var(--accent) l c calc(h - 60)); --t: 56s; right: -30vmax; top: -10vmax; animation-delay: -18s; }
-  .wall i:nth-child(3) { --c: oklch(from var(--accent) l c calc(h + 50)); --t: 64s; left: 10vw; bottom: -40vmax; animation-delay: -33s; }
+  .wall i:nth-child(1) { --c: var(--h2); --t: 48s; left: -25vmax; top: -30vmax; }
+  .wall i:nth-child(2) { --c: var(--h1); --t: 56s; right: -30vmax; top: -10vmax; animation-delay: -18s; }
+  .wall i:nth-child(3) { --c: var(--h3); --t: 64s; left: 10vw; bottom: -40vmax; animation-delay: -33s; }
+  /* The bands: wide ellipses of the three hues, blurred to silk and tilted, the lower one a little later in its sway. */
+  .wall b {
+    position: absolute;
+    left: -35vmax;
+    width: 170vmax;
+    height: 46vmax;
+    border-radius: 50%;
+    background: linear-gradient(90deg, var(--h1), var(--h2) 45%, var(--h3));
+    opacity: 0.5;
+    filter: blur(6vmax);
+    animation: sway 40s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  .wall b:nth-of-type(1) { top: 30vh; transform: rotate(-14deg); }
+  .wall b:nth-of-type(2) { top: 62vh; opacity: 0.4; background: linear-gradient(90deg, var(--h3), var(--h1) 55%, var(--h2)); animation-delay: -20s; animation-duration: 52s; }
+  :global(html.dark) .wall b { opacity: 0.6; }
+  :global(html.dark) .wall b:nth-of-type(2) { opacity: 0.45; }
   @keyframes drift {
     0% { transform: translate(0, 0) scale(1); }
     50% { transform: translate(14vw, 10vh) scale(1.12); }
     100% { transform: translate(-8vw, 16vh) scale(0.94); }
   }
-  :global(html.dark) .wall { --mix: 38%; }
-  @media (prefers-reduced-motion: reduce) { .wall i { animation: none; } }
+  @keyframes sway {
+    0% { transform: rotate(-14deg) translateY(0); }
+    100% { transform: rotate(-6deg) translateY(-6vh); }
+  }
+  @media (prefers-reduced-motion: reduce) { .wall i, .wall b { animation: none; } }
 
   /* A window on the desktop: inset from the edges, rounded, a hairline rim and a deep soft shadow, as macOS draws it.
      It takes the viewport's height above the footer (the page is a flex column, see +page.svelte). */
@@ -590,7 +722,7 @@
   .with-lib .stage {
     position: relative;
     min-height: 0;
-    background: var(--panel);
+    background: var(--ground);
     margin: var(--frame) var(--frame) 0 0;
     border-radius: var(--body-r);
     container-type: inline-size;
@@ -600,7 +732,7 @@
   .with-lib .stage::before {
     content: ""; position: absolute; inset: 0 0 auto; z-index: 1; height: var(--top-h);
     border-radius: inherit; pointer-events: none;
-    background: linear-gradient(color-mix(in srgb, var(--panel) 80%, transparent), transparent calc(var(--top-h) / 3));
+    background: linear-gradient(color-mix(in srgb, var(--ground) 80%, transparent), transparent calc(var(--top-h) / 3));
   }
   .with-lib .stage::after {
     content: "";
@@ -652,12 +784,12 @@
   .top .nav .history .side-toggle { margin-right: var(--sp-2); }
   .top .nav .crumbs { flex: 0 1 auto; margin-left: var(--sp-2); }
   .top .tools { flex: none; }
-  .top .tools .find { background-color: var(--ctl); box-shadow: none; margin: 0 var(--sp-1) 0 calc(var(--sp-1) - var(--sp-0)); }
+  .top .tools .find { background: none; box-shadow: none; padding-left: var(--sp-3); margin-right: var(--sp-1); }
   .top .cap button { color: var(--fg); }
   .top .cap :is(.sep, .find, .find .kbd) { color: var(--fg-2); }
   .top .cap .find input::placeholder { color: var(--fg-2); }
-  .top .tools .find:hover { background-color: var(--ctl-hover); background-image: none; }
-  .top .tools .find:focus-within { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent); }
+  .top .tools .find:hover { background: var(--hover); }
+  .top .tools .find:focus-within { background: var(--ctl); box-shadow: none; }
   .history { display: flex; align-items: center; gap: var(--sp-0); flex: none; }
   .history .side-toggle { margin-right: var(--sp-3); }
   .top button {
@@ -689,6 +821,12 @@
   .top .sep { flex: none; color: var(--fg-3); font-weight: 400; }
   .crumb[aria-current] { min-width: 0; padding: 0 var(--sp-2); font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   @container (max-width: 560px) { .top .crumbs .home span { display: none; } }
+  /* The folded middle of a long path: "…" opens the global .menu under it. */
+  .step.fold { flex: none; }
+  .top .crumbs .fold button { width: var(--ctl-h); padding: 0; justify-content: center; anchor-name: --crumb-fold; }
+  .top .crumbs .fold svg { fill: currentColor; stroke: none; }
+  #crumb-fold { position-anchor: --crumb-fold; top: calc(anchor(bottom) + var(--sp-1)); left: anchor(left); max-width: 22rem; transform-origin: top left; }
+  #crumb-fold button { display: block; overflow: hidden; text-overflow: ellipsis; }
   .find {
     flex: none;
     width: 240px;
@@ -710,6 +848,8 @@
   .find:is(:focus-within, :has(input:not(:placeholder-shown))) .kbd { opacity: 0; }
   .lens { flex: none; display: grid; place-items: center; }
   .lens svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .lens .spin { color: var(--accent); animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(1turn); } }
   .find input { flex: 1; min-width: 0; border: none; background: none; color: var(--fg); font: inherit; font-size: var(--fs); outline: none; padding: 0; }
   .find input::placeholder { color: var(--fg-3); }
   .find input::-webkit-search-cancel-button { display: none; }
@@ -721,10 +861,12 @@
   .top svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
   .side { grid-column: 1; grid-row: 1 / -1; display: flex; flex-direction: column; min-height: 0; container-type: inline-size; }
   .strip { flex: none; display: flex; align-items: center; gap: 2px; height: var(--top-h); padding: 0 var(--sp-3) 0 calc(72px + var(--sp-5)); overflow: hidden; }
-  .logo { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; color: var(--fg); font-size: calc(var(--name-fs) * 8 / 7); font-weight: 600; line-height: 1; white-space: nowrap; pointer-events: none; }
-  .logo svg { flex: none; width: 1.25em; height: 1.25em; fill: currentColor; }
-  .logo :global(.wordmark) { align-self: baseline; }
-  .logo .ver { align-self: center; padding: 2px 6px; border-radius: 6px; background: var(--active); color: var(--fg-2); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; line-height: 1.2; }
+  .logo { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; color: var(--fg-2); line-height: 1; white-space: nowrap; pointer-events: none; }
+  .logo .mark { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  /* The name in the sidebar: one colour, small spaced capitals (not the two-tone wordmark of About). */
+  .logo :global(.wordmark) { font-size: var(--micro-fs); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .logo :global(.wordmark > span) { color: inherit; }
+  .logo .ver { color: var(--fg-3); font-size: var(--micro-fs); font-variant-numeric: tabular-nums; }
   .side > :global(.lib) { flex: 1; }
   .with-lib .stage { grid-column: 2; grid-row: 1 / 3; }
   .no-lib:not(.gliding) .side { display: none; }
@@ -739,6 +881,21 @@
   .no-lib .top { padding-left: 12px; padding-right: 12px; }
   .no-lib .top .nav { padding-left: calc(60px + var(--sp-3)); }
   .dock { grid-column: 2; grid-row: 3; min-width: 0; margin-right: var(--frame); container-type: inline-size; }
+  /* Floating (the app's Settings › Player, on in the demo): the body runs to the window's foot and the player floats
+     over it, centred, on glass with the floating layers' shadow, as wide as its parts want (fitFloat). */
+  :global(html.player-float) .with-lib .stage { grid-row: 1 / 4; margin-bottom: var(--frame); }
+  :global(html.player-float) .with-lib main { padding-bottom: calc(var(--player-cover) + 2 * var(--sp-2) + var(--sp-3) + var(--sp-7)); }
+  :global(html.player-float) .dock {
+    grid-row: 2 / 4; align-self: end; justify-self: center; z-index: 4; height: calc(var(--player-cover) + 2 * var(--sp-2)); box-sizing: border-box;
+    max-width: calc(100% - 2 * var(--gutter));
+    display: flex; justify-content: center;
+    margin: 0 0 calc(var(--frame) + var(--sp-3));
+    border-radius: var(--r-3);
+    background: var(--glass-panel);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow);
+  }
+  :global(html.player-float) .resizer { bottom: 0; }
   .resizer { position: absolute; top: var(--top-h); bottom: var(--bar-h); left: calc(var(--lib-w) - 6px); width: 12px; z-index: 2; cursor: col-resize; }
   .resizer::after {
     content: "";

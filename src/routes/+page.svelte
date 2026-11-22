@@ -17,7 +17,7 @@
 
 <!-- Under the window, straight on the desktop: the one thing everyone must read. Who made it lives on the About page. -->
 <footer class="foot">
-  <p>Lowkey is an unofficial, independent project, not affiliated with, endorsed by or sponsored by Spotify AB. Spotify is a trademark of Spotify AB.</p>
+  <p>Lowkey is an unofficial, independent project, not affiliated with, endorsed by or sponsored by Spotify AB. It only streams through Spotify and never downloads or records music. Spotify is a trademark of Spotify AB.</p>
 </footer>
 
 <style>
@@ -37,7 +37,7 @@
     text-align: center;
     font-size: 13px;
     line-height: 1.5;
-    color: var(--fg-3);
+    color: var(--fg-2);
     text-wrap: balance;
   }
   .foot p { margin: 0; }

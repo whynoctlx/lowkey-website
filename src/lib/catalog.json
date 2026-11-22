@@ -481,6 +481,67 @@
   ]
  },
  {
+  "id": "chase-status-generic",
+  "genre": "dnb",
+  "by": "Chase & Status",
+  "name": "Generic Everything",
+  "year": 2026,
+  "cover": "https://cdn-images.dzcdn.net/images/cover/b262f39beea4ccf38ebb99a12f05d21f/1000x1000-000000-80-0-0.jpg",
+  "artistImage": "https://cdn-images.dzcdn.net/images/artist/348cebc5204d437cb0329dc399a15c49/1000x1000-000000-80-0-0.jpg",
+  "tracks": [
+   {
+    "name": "Disgruntled (feat. J Hus & IRAH)",
+    "dur": 192,
+    "explicit": true
+   },
+   {
+    "name": "Tension (feat. Saam Sultan)",
+    "dur": 147,
+    "explicit": true
+   },
+   {
+    "name": "Carnage (feat. Little Simz)",
+    "dur": 188,
+    "explicit": true
+   },
+   {
+    "name": "Essa Ta Quente",
+    "dur": 166,
+    "explicit": true
+   },
+   {
+    "name": "Juggin (feat. Blanco & Finesse Kid)",
+    "dur": 167,
+    "explicit": true
+   },
+   {
+    "name": "Levels (feat. D Double E)",
+    "dur": 153,
+    "explicit": false
+   },
+   {
+    "name": "Influence (feat. Ledbyher)",
+    "dur": 201,
+    "explicit": true
+   },
+   {
+    "name": "Gone Too Far (feat. Debbie)",
+    "dur": 244,
+    "explicit": false
+   },
+   {
+    "name": "Timber (feat. Giggs)",
+    "dur": 166,
+    "explicit": true
+   },
+   {
+    "name": "Shutdown (feat. IRAH & Col3trane)",
+    "dur": 170,
+    "explicit": true
+   }
+  ]
+ },
+ {
   "genre": "dnb",
   "by": "Sub Focus",
   "name": "Torus",

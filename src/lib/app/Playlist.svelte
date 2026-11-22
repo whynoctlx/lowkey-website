@@ -1,5 +1,6 @@
 <script lang="ts" module>
   import type { Row } from "./Library.svelte";
+  import { tiles } from "./tiles";
   export type Track = {
     uri: string;
     name: string;
@@ -9,7 +10,8 @@
     image?: string | null;
     duration_ms: number;
     explicit?: boolean;
-    popularity?: number | null;
+    /** The uri a relinked song is listed under (its playlist's own), when it differs from `uri`. */
+    linked_from?: string | null;
     disc?: number | null;
     number?: number | null;
     version?: string | null;
@@ -19,6 +21,8 @@
   };
   /** Header details from `library_tracks`: playlists fill the first two, albums the rest. */
   export type Info = {
+    /** The item's own name (opened from a pasted link). */
+    name?: string | null;
     description?: string | null;
     collaborative?: boolean;
     album_type?: string | null;
@@ -34,17 +38,21 @@
     sections?: { key: string; title: string; total?: number; rows: Row[] }[];
     active?: { start: number; end?: number | null } | null;
   };
+  /** Each cover's colour, read once per run (null: a grey cover). */
+  const heroTints = new Map<string, [number, number] | null>();
 </script>
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import { coverTint } from "./tint";
   import { L } from "./i18n";
   import Tile from "./Tile.svelte";
   import PlayIcon from "./PlayIcon.svelte";
   import SaveIcon from "./SaveIcon.svelte";
   import { enter, exit, pop, underline } from "./motion.svelte";
-  import { tiles } from "./tiles";
   import { who } from "./who";
+  import { isIgnored } from "./ignored";
+  import { ignored, setIgnored } from "./ignored.svelte";
 
   let {
     item,
@@ -102,6 +110,18 @@
 
   const isArtist = $derived(item.kind === "artists");
   const cover = $derived(item.image ?? info.image);
+  // The hero's ground takes the cover's colour; a cover read before shows it at once, a new one fades it in.
+  let heroTint = $state<[number, number] | null>(null);
+  $effect(() => {
+    const url = cover;
+    heroTint = (url && heroTints.get(url)) || null;
+    if (!url || heroTints.has(url)) return;
+    coverTint(url).then((t) => {
+      if (t === undefined) return;
+      heroTints.set(url, t);
+      if (url === cover) heroTint = t;
+    });
+  });
   // An artist's ten popular tracks, in two columns of five.
   const shown = $derived(isArtist ? tracks?.slice(0, 10) : tracks);
   // Discography: the artist's own release groups behind one switch; "appears on" and related artists get shelves of their own.
@@ -234,6 +254,8 @@
   <div class="head">
   {#if isArtist && info.banner}
     <div class="banner"><img src={info.banner} alt="" /></div>
+  {:else if heroTint}
+    <div class="wash" style:--hero-h={heroTint[0]} style:--hero-s="{Math.round(Math.min(0.85, Math.max(0.45, heroTint[1])) * 100)}%" in:enter={{ y: 0 }} out:exit aria-hidden="true"></div>
   {/if}
   <header class="hero">
     <!-- With a banner (or while one may come) the artist's photo is there: no portrait. -->
@@ -281,7 +303,19 @@
         <button class="follow" class:raised={!saved} class:raised-n={saved} class:on={saved} aria-pressed={saved} title={saved ? L.item.unfollow : L.item.follow} onclick={() => setSaved(!saved)}>
           {saved ? L.item.following : L.item.follow}
         </button>
-      {:else}
+      {/if}
+    {/if}
+    <!-- Ignore (artists), a disc like shuffle, cycling: their songs, then also the ones they appear on (a second ring),
+         then off; the same choice as Settings › Ignored. -->
+    {#if isArtist}
+      {@const ig = ignored.by[item.uri]}
+      {@const tip = !ig ? L.item.ignoreTip : ig.any ? L.item.ignoredAnyTip : L.item.ignoredOwnTip}
+      <button class="shuffle raised-n" class:on={!!ig} use:pop aria-pressed={!!ig} aria-label={tip} title={tip} onclick={() => setIgnored(item.uri, ig?.any ? null : { name: item.name, image: cover ?? null, any: !!ig })}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">{#if ig?.any}<circle cx="12" cy="12" r="10.5" /><circle cx="12" cy="12" r="6.5" /><path d="M7.4 7.4l9.2 9.2" />{:else}<circle cx="12" cy="12" r="8" /><path d="M6.3 6.3l11.4 11.4" />{/if}</svg>
+      </button>
+    {/if}
+    {#if saved !== undefined}
+      {#if !isArtist}
         <button class="shuffle raised-n" class:on={saved} use:pop aria-pressed={saved} aria-label={saved ? L.item.unsave : L.item.save} title={saved ? L.item.unsave : L.item.save} onclick={() => setSaved(!saved)}>
           <svg viewBox="0 0 24 24" aria-hidden="true">{#if saved}<path d="M5 12.5l4.5 4.5L19 7.5" />{:else}<path d="M12 5v14M5 12h14" />{/if}</svg>
         </button>
@@ -332,7 +366,7 @@
           {/if}
           <!-- A click anywhere on the row plays it; keyboard users have the row's play button. -->
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
-          <li class="track hl" class:now in:enter={{ y: -6, collapse: true, f: windowed ? 0 : 1 }} out:exit={{ y: -6, collapse: true, f: windowed ? 0 : 1 }} onclick={() => playTrack(t.uri)}>
+          <li class="track hl" class:now class:ignored={isIgnored(t.artists.map((a) => a.uri), ignored.by)} in:enter={{ y: -6, collapse: true, f: windowed ? 0 : 1 }} out:exit={{ y: -6, collapse: true, f: windowed ? 0 : 1 }} onclick={() => playTrack(t.uri)}>
             <!-- The number (track number on albums, position elsewhere) swaps for the play glyph or the equaliser; playlists show the cover after it. -->
             <span class="num">
               {#if now}
@@ -355,7 +389,7 @@
                 <!-- Save right after the name (as in Spotify's lists): shown pointed at, always when saved. -->
                 {#if liked && t.uri.startsWith("spotify:track:")}
                   {@const on = liked.has(t.uri)}
-                  <button class="like" class:on use:pop aria-haspopup={on ? "menu" : undefined} aria-label={on ? L.common.saved : L.common.like} title={on ? L.common.saved : L.common.like} onclick={(e) => (e.stopPropagation(), on ? (addTo ? addTo(t.uri, e.currentTarget) : setLiked(t.uri, false)) : setLiked(t.uri, true))}>
+                  <button class="like swap-in" class:on use:pop aria-haspopup={on ? "menu" : undefined} aria-label={on ? L.common.saved : L.common.like} title={on ? L.common.saved : L.common.like} onclick={(e) => (e.stopPropagation(), on ? (addTo ? addTo(t.uri, e.currentTarget) : setLiked(t.uri, false)) : setLiked(t.uri, true))}>
                     <SaveIcon {on} />
                   </button>
                 {/if}
@@ -483,12 +517,24 @@
      `auto`, max-height carries through the ratio and narrows it. */
   .head:has(.banner) { display: grid; margin-top: calc(-1 * var(--top-h)); }
   .head:has(.banner)::before { content: ""; grid-area: 1 / 1; width: 100%; aspect-ratio: 2; max-height: calc(var(--banner-max) + var(--top-h)); }
-  .banner { grid-area: 1 / 1 / 3 / 2; min-height: 0; }
-  /* The hero's ground rises out of the photo: clear at its top, the panel see-through by the Transparency setting in
-     the middle, the full panel at its foot, so the photo melts into the page with no edge. */
-  .banner + .hero {
-    grid-area: 2 / 1; position: relative;
-    background: linear-gradient(transparent 20%, color-mix(in srgb, var(--panel) var(--glass-tint, 65%), transparent) 35%, var(--panel) 55%);
+  /* The photo itself fades to clear at its foot: under a see-through ground (Glass) the hero's ground alone left its
+     lower edge standing. */
+  .banner { grid-area: 1 / 1 / 3 / 2; min-height: 0; -webkit-mask: linear-gradient(#000 60%, transparent); mask: linear-gradient(#000 60%, transparent); }
+  /* The hero lies on the photo with no ground of its own: the photo's fade (.banner's mask) melts it into the page; a
+     ground here doubled a see-through one (Glass) and left a band at the hero's foot. */
+  .banner + .hero { grid-area: 2 / 1; position: relative; }
+  /* Without a banner the hero rises out of its cover's colour: from the window's top (under the toolbar) down to the panel at
+     the hero's foot (AGENTS.md "Design", Flat). */
+  .head { position: relative; }
+  .wash {
+    position: absolute; inset: calc(-1 * var(--top-h)) 0 0; pointer-events: none;
+    background: linear-gradient(color-mix(in srgb, hsl(var(--hero-h) var(--hero-s) 50%) var(--hero-wash), transparent), transparent);
+  }
+  .wash + .hero { position: relative; }
+  /* On the photo the name and About lie on a glass card, as the toolbar's capsules (AGENTS.md "Glass"), as wide as they are. */
+  .banner + .hero .info {
+    flex: 0 1 auto; margin-right: auto; padding: var(--sp-4) var(--sp-5); border-radius: var(--r-3);
+    background: var(--glass-panel); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   }
   .waiting { visibility: hidden; }
   .banner img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
@@ -551,12 +597,12 @@
 
   .actions { flex: none; display: flex; align-items: center; gap: var(--sp-2); }
   /* Follow: a raised pill of the round buttons' height; not followed the accent one (.raised, as the play), followed
-     the neutral one pressed in (.raised-n.on). One width, so the words swapping don't move the buttons beside it. */
+     the neutral one on (.raised-n.on, accent-washed glass). One width, so the words swapping don't move the buttons beside it. */
   .follow {
     flex: none; height: var(--play-h); min-width: calc(var(--play-h) * 2.6); padding: 0 var(--sp-4); border-radius: 999px;
     font: inherit; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
   }
-  /* Shuffle and save: raised neutral discs (.raised-n) of the play's size; on, pressed in with the accent glyph. */
+  /* Shuffle and save: raised neutral discs (.raised-n) of the play's size; on, accent-washed glass with the accent glyph. */
   .shuffle { flex: none; display: grid; place-items: center; width: var(--play-h); height: var(--play-h); padding: 0; border-radius: 50%; }
   .shuffle svg { width: 45%; height: 45%; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -607,9 +653,6 @@
   .pic img, .pic .thumb { position: absolute; inset: 0; width: 100%; height: 100%; }
   .album .track, .track.skeleton { grid-template-columns: auto minmax(0, 1fr) auto; }
   .dot { flex: none; margin: 0 var(--sp-2); color: var(--fg-3); }
-  /* The heart after the name, sized to its line (the button overhangs it, the glyph stays inside the line). */
-  .name .like { opacity: 0; }
-  .track:is(:hover, :has(:focus-visible)) .like, .name .like.on { opacity: 1; }
   .dur { flex: none; width: 40px; text-align: right; color: var(--fg-3); font-size: var(--sub-fs); font-variant-numeric: tabular-nums; }
 
   .pic img, .thumb { width: var(--thumb); height: var(--thumb); border-radius: var(--r-2); flex: none; object-fit: cover; background: var(--active); }
@@ -670,16 +713,10 @@
   .note { padding: var(--sp-4) var(--gutter); color: var(--fg-2); }
   .note p { margin: 0 0 var(--sp-3); }
 
-  .skeleton { animation: pulse 1.4s ease-in-out infinite, wait var(--m-4) var(--ease) var(--m-4) backwards; }
   .skeleton .pic { border-radius: var(--r-1); background: var(--active); }
   .skeleton .text { gap: var(--sp-2); flex: 1; }
   .skeleton .text span { display: block; height: 8px; border-radius: var(--r-1); background: var(--active); width: 60%; }
   .skeleton .text span + span { width: 35%; }
-  @keyframes pulse { 50% { opacity: 0.5; } }
-
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton { animation: none; }
-  }
 
   /* The main panel is narrow when the library is dragged wide. */
   /* Narrow panel: the date goes, the name takes its room. */

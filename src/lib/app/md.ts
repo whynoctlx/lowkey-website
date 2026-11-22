@@ -2,7 +2,7 @@
  *  The text is escaped first, so the file can't inject markup; links only to http(s).
  *  shortcut: no nested lists, tables, images or code blocks; switch to `marked` if the changelogs need them. */
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const inline = (s: string) =>
+export const inline = (s: string) =>
   esc(s)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")

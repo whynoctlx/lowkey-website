@@ -1,5 +1,6 @@
 <script lang="ts" module>
   import type { LibItem } from "./Library.svelte";
+  import { tiles } from "./tiles";
   import type { Track } from "./Playlist.svelte";
   export type Results = { tracks: Track[]; artists: LibItem[]; albums: LibItem[]; playlists: LibItem[] };
 </script>
@@ -7,10 +8,11 @@
 <script lang="ts">
   import { L } from "./i18n";
   import { enter, exit } from "./motion.svelte";
+  import { isIgnored } from "./ignored";
+  import { ignored } from "./ignored.svelte";
   import type { Row } from "./Library.svelte";
   import Tile from "./Tile.svelte";
   import PlayIcon from "./PlayIcon.svelte";
-  import { tiles } from "./tiles";
 
   let {
     query,
@@ -77,7 +79,7 @@
               {@const now = t.uri === playingTrack}
               <!-- A click anywhere on the row plays it; keyboard users have the play button over the cover. -->
               <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-              <div class="track hl" class:now role="listitem" onclick={() => playTrack(t.uri)}>
+              <div class="track hl" class:now class:ignored={isIgnored(t.artists.map((a) => a.uri), ignored.by)} role="listitem" onclick={() => playTrack(t.uri)}>
                 <span class="cover veil">
                   {#if t.image}<img src={t.image} alt="" loading="lazy" />{/if}
                   {#if now}<span class="eq swap-out" class:held={!playing} aria-label={playing ? L.common.playing : L.common.paused}><i></i><i></i><i></i></span>{/if}
@@ -153,12 +155,9 @@
   .sub { font-size: var(--sub-fs); color: var(--fg-3); }
   .dur { padding-right: var(--sp-1); font-variant-numeric: tabular-nums; }
 
-  .skeleton .cover, .skeleton .text span { animation: pulse 1.4s ease-in-out infinite, wait var(--m-4) var(--ease) var(--m-4) backwards; }
   .skeleton .text { gap: var(--sp-2); }
   .skeleton .text span { height: 12px; width: 40%; border-radius: var(--r-1); background: var(--active); }
   .skeleton .text span:first-child { width: 60%; }
-  @keyframes pulse { 50% { opacity: 0.5; } }
-  @media (prefers-reduced-motion: reduce) { .skeleton .cover, .skeleton .text span { animation: none; } }
   @container (max-width: 760px) {
     .tracks { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-flow: row; }
   }
